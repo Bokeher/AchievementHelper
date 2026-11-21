@@ -31,7 +31,6 @@ public class Plugin : BaseUnityPlugin
     // Feature Toggles
     internal static ConfigEntry<bool> ShowItemTooltips = null!;
     internal static ConfigEntry<bool> ShowCraftingFilter = null!;
-    internal static ConfigEntry<bool> ShowCookingStationPrompt = null!;
     internal static ConfigEntry<bool> ShowBuildIcons = null!;
     internal static ConfigEntry<bool> ShowEnemyIndicators = null!;
 
@@ -77,7 +76,6 @@ public class Plugin : BaseUnityPlugin
 
         ShowItemTooltips = Config.Bind("Features", "ShowItemTooltips", true, "Show achievement status on item and raw food tooltips.");
         ShowCraftingFilter = Config.Bind("Features", "ShowCraftingFilter", true, "Show not-crafted / not-cooked filter in crafting and cooking menus.");
-        ShowCookingStationPrompt = Config.Bind("Features", "ShowCookingStationPrompt", true, "Show missing roasted food indicator on cooking station hover prompts.");
         ShowBuildIcons = Config.Bind("Features", "ShowBuildIcons", true, "Show built status icons on building pieces.");
         ShowEnemyIndicators = Config.Bind("Features", "ShowEnemyIndicators", true, "Show undefeated and missing trophy icons on enemy health bars.");
 
