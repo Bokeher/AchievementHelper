@@ -154,6 +154,7 @@ public static class AchievementService
     private static readonly HashSet<string> BuildPieceTargets = new();
     private static readonly HashSet<string> EnemyTargets = new();
     private static readonly HashSet<string> TrophyTargets = new();
+    private static readonly Dictionary<string, string> RawToCookedMap = new();
 
     public static void OnAchievementsInitialized()
     {
@@ -536,6 +537,8 @@ public static class AchievementService
     public static bool IsBuildPieceTarget(string pieceName) => BuildPieceTargets.Contains(pieceName);
     public static bool IsEnemyTarget(string enemyName) => EnemyTargets.Contains(enemyName);
     public static bool IsTrophyTarget(string trophySharedName) => TrophyTargets.Contains(trophySharedName);
+    public static bool TryGetCookedVariant(string rawSharedName, out string cookedSharedName) =>
+        RawToCookedMap.TryGetValue(rawSharedName, out cookedSharedName);
 
     public static bool HasCraftedItem(string sharedName)
     {
@@ -637,6 +640,34 @@ public static class AchievementService
         BuildPieceTargets.Clear();
         EnemyTargets.Clear();
         TrophyTargets.Clear();
+        RawToCookedMap.Clear();
+
+        if (ZNetScene.instance != null)
+        {
+            foreach (GameObject prefab in ZNetScene.instance.m_prefabs)
+            {
+                if (prefab == null) continue;
+                CookingStation station = prefab.GetComponent<CookingStation>();
+                if (station == null) continue;
+
+                foreach (CookingStation.ItemConversion conv in station.m_conversion)
+                {
+                    string? fromName = conv.m_from?.m_itemData?.m_shared?.m_name;
+                    ItemDrop.ItemData.SharedData? toShared = conv.m_to?.m_itemData?.m_shared;
+                    if (string.IsNullOrEmpty(fromName) || toShared == null || string.IsNullOrEmpty(toShared.m_name))
+                    {
+                        continue;
+                    }
+
+                    if (toShared.m_food > 0f &&
+                        toShared.m_itemType == ItemDrop.ItemData.ItemType.Consumable &&
+                        !RawToCookedMap.ContainsKey(fromName!))
+                    {
+                        RawToCookedMap[fromName!] = toShared.m_name;
+                    }
+                }
+            }
+        }
 
         if (Achievements.m_instance == null)
         {

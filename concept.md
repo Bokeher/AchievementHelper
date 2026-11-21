@@ -26,7 +26,7 @@
 
 ## 4. Cooking & Eating
 - **Not-Cooked Filter & Tooltip:** Cooking works similarly to crafting in Valheim, so it should follow the exact same behavior as Crafting, using `not-cooked` instead of `not-crafted`.
-- **Cooking Station (Roasted Items):** On cooking/roasting stations (`CookingStation`), show in the hover prompt if the resulting food has not been cooked for the achievement yet.
+- **Cooking Station (Roasted Items):** On cooking/roasting stations (`CookingStation`), show in the hover prompt if the resulting food has not been cooked for the achievement yet. On raw cookable item tooltips, show if the roasted/baked variant has not been cooked or eaten for the achievement yet.
 - **Not-Eaten Indicator:** On every consumable item tooltip, show whether the item has not been eaten for the achievement (`AllFoodEaten`) yet.
 
 ## 5. Building
