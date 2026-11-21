@@ -326,6 +326,55 @@ public static class AchievementService
         Plugin.Instance.Config.Save();
     }
 
+    public static bool HasAnyManuallyRevealedEntry(Achievement achievement)
+    {
+        if (achievement == null || string.IsNullOrEmpty(achievement.m_id))
+        {
+            return false;
+        }
+
+        EnsureRevealedLoaded();
+        string prefix = achievement.m_id + ":";
+        foreach (string entry in RevealedIds)
+        {
+            if (entry.Equals(achievement.m_id, StringComparison.OrdinalIgnoreCase) ||
+                entry.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static void HideAchievement(Achievement achievement)
+    {
+        if (achievement == null || string.IsNullOrEmpty(achievement.m_id))
+        {
+            return;
+        }
+
+        EnsureRevealedLoaded();
+        string prefix = achievement.m_id + ":";
+        int removed = RevealedIds.RemoveWhere(entry =>
+            entry.Equals(achievement.m_id, StringComparison.OrdinalIgnoreCase) ||
+            entry.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
+        if (removed > 0)
+        {
+            SaveRevealedIds();
+        }
+    }
+
+    public static void HideAllSpoilers()
+    {
+        EnsureRevealedLoaded();
+        Plugin.MasterRevealAll.Value = false;
+        RevealedIds.Clear();
+        Plugin.RevealedAchievementIds.Value = string.Empty;
+        Plugin.Instance.Config.Save();
+    }
+
     public static bool IsConcealed(Achievement achievement)
     {
         if (achievement == null || achievement.m_unlocked || Plugin.MasterRevealAll.Value)

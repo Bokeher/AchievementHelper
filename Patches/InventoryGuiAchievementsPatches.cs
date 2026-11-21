@@ -179,14 +179,25 @@ internal static class InventoryGuiAchievementsPatches
             return;
         }
 
+        button.gameObject.SetActive(true);
+        TMP_Text? label = button.GetComponentInChildren<TMP_Text>(true);
+
         if (Plugin.MasterRevealAll.Value)
         {
-            button.gameObject.SetActive(false);
+            if (label != null)
+            {
+                label.text = "Hide All";
+            }
+
+            button.onClick = new Button.ButtonClickedEvent();
+            button.onClick.AddListener(() =>
+            {
+                AchievementService.HideAllSpoilers();
+                gui.UpdateAchievementsList();
+            });
             return;
         }
 
-        button.gameObject.SetActive(true);
-        TMP_Text? label = button.GetComponentInChildren<TMP_Text>(true);
         if (label != null)
         {
             label.text = "Reveal All";

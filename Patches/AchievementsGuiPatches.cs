@@ -11,10 +11,12 @@ namespace AchievementHelper.Patches;
 internal static class AchievementsGuiPatches
 {
     private const string RevealButtonName = "AchievementHelper_RevealButton";
+    private const string HideButtonName = "AchievementHelper_HideButton";
 
     private static Achievement? _currentAchievement;
     private static TMP_Text? _detailsHeaderText;
     private static Button? _revealButton;
+    private static Button? _hideButton;
 
     private static readonly Color CompletedColor = Color.green;
     private static readonly Color RevealedNameColor = new(0.88f, 0.88f, 0.88f, 1f);
@@ -154,7 +156,7 @@ internal static class AchievementsGuiPatches
             row.StatName.text = "???  (click to reveal)";
             row.Progress.text = progressText;
 
-            MakeRowClickableToReveal(row, ach, statKey, displayName);
+            MakeRowClickableToReveal(__instance, row, ach, statKey, displayName);
             return false;
         }
 
@@ -179,6 +181,7 @@ internal static class AchievementsGuiPatches
     }
 
     private static void MakeRowClickableToReveal(
+        AchievementsGui gui,
         AchievementDetailUnlockCondition row,
         Achievement achievement,
         string statKey,
@@ -218,11 +221,9 @@ internal static class AchievementsGuiPatches
             if (!AchievementService.HasAnyUnrevealedCondition(achievement))
             {
                 AchievementService.RevealAchievement(achievement);
-                if (_revealButton != null)
-                {
-                    _revealButton.gameObject.SetActive(false);
-                }
             }
+
+            UpdateRevealButton(gui, achievement);
         });
     }
 
@@ -271,38 +272,65 @@ internal static class AchievementsGuiPatches
 
     private static void UpdateRevealButton(AchievementsGui gui, Achievement achievement)
     {
-        Button? button = EnsureRevealButton(gui);
-        if (button == null)
-        {
-            return;
-        }
+        Button? revealBtn = EnsureCornerButton(gui, RevealButtonName, "Reveal", ref _revealButton);
+        Button? hideBtn = EnsureCornerButton(gui, HideButtonName, "Hide", ref _hideButton);
 
         AchievementDisplayMode mode = AchievementService.GetDisplayMode(achievement);
-        bool showButton = !achievement.m_unlocked &&
-                          mode == AchievementDisplayMode.Revealable &&
-                          AchievementService.HasAnyUnrevealedCondition(achievement);
+        bool eligible = !achievement.m_unlocked &&
+                        !Plugin.MasterRevealAll.Value &&
+                        mode == AchievementDisplayMode.Revealable;
 
-        button.gameObject.SetActive(showButton);
-        if (!showButton)
+        bool showReveal = eligible && AchievementService.HasAnyUnrevealedCondition(achievement);
+        bool showHide = eligible && AchievementService.HasAnyManuallyRevealedEntry(achievement);
+
+        if (revealBtn != null)
         {
-            return;
+            revealBtn.gameObject.SetActive(showReveal);
+            if (showReveal)
+            {
+                if (revealBtn.transform is RectTransform rt)
+                {
+                    rt.anchoredPosition = new Vector2(-14f, -12f);
+                }
+
+                revealBtn.transform.SetAsLastSibling();
+                revealBtn.onClick = new Button.ButtonClickedEvent();
+                revealBtn.onClick.AddListener(() =>
+                {
+                    AchievementService.RevealAchievement(achievement);
+                    gui.CloseDetails();
+                    gui.OnOpenAchievementDetails(achievement, true);
+                });
+            }
         }
 
-        button.transform.SetAsLastSibling();
-        button.onClick = new Button.ButtonClickedEvent();
-        button.onClick.AddListener(() =>
+        if (hideBtn != null)
         {
-            AchievementService.RevealAchievement(achievement);
-            gui.CloseDetails();
-            gui.OnOpenAchievementDetails(achievement, true);
-        });
+            hideBtn.gameObject.SetActive(showHide);
+            if (showHide)
+            {
+                if (hideBtn.transform is RectTransform rt)
+                {
+                    rt.anchoredPosition = new Vector2(showReveal ? -126f : -14f, -12f);
+                }
+
+                hideBtn.transform.SetAsLastSibling();
+                hideBtn.onClick = new Button.ButtonClickedEvent();
+                hideBtn.onClick.AddListener(() =>
+                {
+                    AchievementService.HideAchievement(achievement);
+                    gui.CloseDetails();
+                    gui.OnOpenAchievementDetails(achievement, true);
+                });
+            }
+        }
     }
 
-    private static Button? EnsureRevealButton(AchievementsGui gui)
+    private static Button? EnsureCornerButton(AchievementsGui gui, string name, string defaultLabel, ref Button? cached)
     {
-        if (_revealButton != null)
+        if (cached != null)
         {
-            return _revealButton;
+            return cached;
         }
 
         Button? template = gui.m_achievementDetails.GetComponentInChildren<Button>(true);
@@ -316,15 +344,15 @@ internal static class AchievementsGuiPatches
             ? template.transform.parent
             : gui.m_achievementDetails.transform;
 
-        Transform? existing = container.Find(RevealButtonName);
+        Transform? existing = container.Find(name);
         if (existing != null)
         {
-            _revealButton = existing.GetComponent<Button>();
-            return _revealButton;
+            cached = existing.GetComponent<Button>();
+            return cached;
         }
 
         GameObject clone = UnityEngine.Object.Instantiate(template.gameObject, container);
-        clone.name = RevealButtonName;
+        clone.name = name;
         clone.transform.SetAsLastSibling();
 
         LayoutElement layoutElement = clone.GetComponent<LayoutElement>() ?? clone.AddComponent<LayoutElement>();
@@ -345,11 +373,11 @@ internal static class AchievementsGuiPatches
         TMP_Text? label = clone.GetComponentInChildren<TMP_Text>(true);
         if (label != null)
         {
-            label.text = "Reveal";
+            label.text = defaultLabel;
             label.fontSize = Mathf.Min(label.fontSize, 16f);
         }
 
-        _revealButton = button;
-        return _revealButton;
+        cached = button;
+        return cached;
     }
 }
