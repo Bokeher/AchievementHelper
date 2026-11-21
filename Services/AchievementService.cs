@@ -204,6 +204,22 @@ public static class AchievementService
         return RevealedIds.Contains(achievement.m_id);
     }
 
+    public static bool IsStatRevealed(Achievement achievement, string statKey)
+    {
+        if (IsRevealed(achievement))
+        {
+            return true;
+        }
+
+        if (achievement == null || string.IsNullOrEmpty(statKey))
+        {
+            return false;
+        }
+
+        EnsureRevealedLoaded();
+        return RevealedIds.Contains($"{achievement.m_id}:{statKey}");
+    }
+
     public static void RevealAchievement(Achievement achievement)
     {
         if (achievement == null || string.IsNullOrEmpty(achievement.m_id))
@@ -214,15 +230,192 @@ public static class AchievementService
         EnsureRevealedLoaded();
         if (RevealedIds.Add(achievement.m_id))
         {
-            Plugin.RevealedAchievementIds.Value = string.Join(",", RevealedIds.OrderBy(id => id));
-            Plugin.Instance.Config.Save();
+            SaveRevealedIds();
         }
+    }
+
+    public static void RevealStat(Achievement achievement, string statKey)
+    {
+        if (achievement == null || string.IsNullOrEmpty(achievement.m_id) || string.IsNullOrEmpty(statKey))
+        {
+            return;
+        }
+
+        EnsureRevealedLoaded();
+        if (RevealedIds.Add($"{achievement.m_id}:{statKey}"))
+        {
+            SaveRevealedIds();
+        }
+    }
+
+    public static bool HasAnyUnrevealedCondition(Achievement achievement)
+    {
+        if (achievement == null || achievement.m_unlocked || IsRevealed(achievement))
+        {
+            return false;
+        }
+
+        PlayerProfile? profile = Game.instance != null ? Game.instance.GetPlayerProfile() : null;
+        if (profile == null)
+        {
+            return false;
+        }
+
+        int diffIndex = (int)achievement.m_difficultyRequirement;
+        if (diffIndex < 0 || diffIndex >= profile.m_playerStats.Length)
+        {
+            return false;
+        }
+
+        PlayerProfile.PlayerStats stats = profile.m_playerStats[diffIndex];
+
+        foreach (var req in achievement.m_statTrigger)
+        {
+            stats.m_stats.TryGetValue(req.m_stat, out float cur);
+            if (cur < req.m_amountAboveEquals && !IsStatRevealed(achievement, req.m_stat.ToString()))
+                return true;
+        }
+
+        foreach (var other in achievement.m_otherAchievementTriggers)
+        {
+            if (other != null && !other.m_unlocked && !IsStatRevealed(achievement, other.m_name))
+                return true;
+        }
+
+        foreach (var req in achievement.m_enemyStatsTriggers)
+        {
+            stats.m_enemyStats[(int)req.m_modifier].TryGetValue(req.m_stat, out float cur);
+            if (cur < req.m_amount && !IsStatRevealed(achievement, req.m_stat))
+                return true;
+        }
+
+        return HasUnrevealedDictTrigger(achievement, achievement.m_foodEatenTriggers, stats.m_foodEatenStats) ||
+               HasUnrevealedDictTrigger(achievement, achievement.m_itemCraftTriggers, stats.m_itemCraftStats) ||
+               HasUnrevealedDictTrigger(achievement, achievement.m_itemPickupTriggers, stats.m_itemPickupStats) ||
+               HasUnrevealedDictTrigger(achievement, achievement.m_knownCommandsTriggers, stats.m_knownCommands) ||
+               HasUnrevealedDictTrigger(achievement, achievement.m_knownWorldKeysTriggers, stats.m_knownWorldKeys) ||
+               HasUnrevealedDictTrigger(achievement, achievement.m_knownWorldTriggers, stats.m_knownWorlds) ||
+               HasUnrevealedDictTrigger(achievement, achievement.m_pickableTriggers, stats.m_pickableStats) ||
+               HasUnrevealedDictTrigger(achievement, achievement.m_piecePlacedTriggers, stats.m_piecesPlacedStats);
+    }
+
+    private static bool HasUnrevealedDictTrigger(
+        Achievement achievement,
+        List<Achievement.DictStatRequirement> triggers,
+        Dictionary<string, float> dict)
+    {
+        foreach (var req in triggers)
+        {
+            dict.TryGetValue(req.m_stat, out float cur);
+            if (cur < req.m_amount && !IsStatRevealed(achievement, req.m_stat))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static void SaveRevealedIds()
+    {
+        Plugin.RevealedAchievementIds.Value = string.Join(",", RevealedIds.OrderBy(id => id));
+        Plugin.Instance.Config.Save();
     }
 
     public static void RevealAllSpoilers()
     {
         Plugin.MasterRevealAll.Value = true;
         Plugin.Instance.Config.Save();
+    }
+
+    public static bool IsConcealed(Achievement achievement)
+    {
+        if (achievement == null || achievement.m_unlocked || Plugin.MasterRevealAll.Value)
+        {
+            return false;
+        }
+
+        if (!achievement.m_isSecret)
+        {
+            return false;
+        }
+
+        AchievementDisplayMode mode = GetDisplayMode(achievement);
+        if (Plugin.DisableNonBossHiding.Value && mode != AchievementDisplayMode.Hidden)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static bool HasAnyDetails(Achievement achievement)
+    {
+        if (achievement == null)
+        {
+            return false;
+        }
+
+        return achievement.m_statTrigger.Count > 0 ||
+               achievement.m_enemyStatsTriggers.Count > 0 ||
+               achievement.m_foodEatenTriggers.Count > 0 ||
+               achievement.m_itemCraftTriggers.Count > 0 ||
+               achievement.m_itemPickupTriggers.Count > 0 ||
+               achievement.m_knownCommandsTriggers.Count > 0 ||
+               achievement.m_knownWorldKeysTriggers.Count > 0 ||
+               achievement.m_knownWorldTriggers.Count > 0 ||
+               achievement.m_pickableTriggers.Count > 0 ||
+               achievement.m_piecePlacedTriggers.Count > 0 ||
+               achievement.m_otherAchievementTriggers.Count > 0;
+    }
+
+    public static string FormatStatName(string statKey)
+    {
+        if (string.IsNullOrEmpty(statKey))
+        {
+            return string.Empty;
+        }
+
+        string lookupKey = Enum.TryParse<PlayerStatType>(statKey, out _)
+            ? "$stat_" + statKey
+            : statKey;
+
+        string localized = Localization.instance != null
+            ? Localization.instance.Localize(lookupKey)
+            : lookupKey;
+
+        if (!string.IsNullOrEmpty(localized) && !(localized.StartsWith("[") && localized.EndsWith("]")))
+        {
+            return localized;
+        }
+
+        return SplitPascalCase(statKey.TrimStart('$'));
+    }
+
+    public static string FormatAmount(float value)
+    {
+        return Mathf.Approximately(value, Mathf.Round(value))
+            ? Mathf.RoundToInt(value).ToString()
+            : value.ToString("0.#");
+    }
+
+    private static string SplitPascalCase(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+        {
+            return string.Empty;
+        }
+
+        var sb = new System.Text.StringBuilder(input.Length + 8);
+        for (int i = 0; i < input.Length; i++)
+        {
+            char c = input[i];
+            if (i > 0 && char.IsUpper(c) && !char.IsUpper(input[i - 1]) && input[i - 1] != ' ' && input[i - 1] != '_')
+            {
+                sb.Append(' ');
+            }
+            sb.Append(c == '_' ? ' ' : c);
+        }
+
+        return sb.ToString();
     }
 
     public static float GetCompletionPercentage(Achievement achievement)
