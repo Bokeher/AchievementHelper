@@ -1,0 +1,13 @@
+# Decompiled game files (never commit)
+assembly_valheim/
+assembly_valheim.sln
+
+# Build & IDE artifacts
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# User-local Valheim path override
+Directory.Build.props

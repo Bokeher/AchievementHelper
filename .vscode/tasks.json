@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build & Copy Plugin",
+      "type": "shell",
+      "command": "dotnet build \"${workspaceFolder}/AchievementHelper.csproj\" --no-restore -p:CopyToPlugins=true",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Build & Run Valheim",
+      "type": "shell",
+      "command": "\"${workspaceFolder}/run-valheim.cmd\"",
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}
