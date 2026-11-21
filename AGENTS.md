@@ -2,6 +2,7 @@
 
 ## Git Rules
 - **Never run `git` commands** (`init`, `add`, `commit`, `push`, `reset`, etc.) unless explicitly asked.
+- After changes, propose a commit message based on `COMMIT_SCOPES.md` only when a commit is appropriate.
 
 ## General Rules
 - Default to feedback and discussion only; do not modify files unless explicitly instructed to do so.
