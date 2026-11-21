@@ -229,8 +229,12 @@ internal static class InventoryGuiAchievementsPatches
             return _masterRevealButton;
         }
 
-        Transform panelRoot = gui.m_achievementsPanel.transform;
-        Transform? existing = panelRoot.Find(MasterRevealButtonName);
+        Transform container = gui.m_achievementsCompletionRateText != null &&
+                              gui.m_achievementsCompletionRateText.transform.parent != null
+            ? gui.m_achievementsCompletionRateText.transform.parent
+            : gui.m_achievementsPanel.transform;
+
+        Transform? existing = container.Find(MasterRevealButtonName);
         if (existing != null)
         {
             _masterRevealButton = existing.GetComponent<Button>();
@@ -238,30 +242,44 @@ internal static class InventoryGuiAchievementsPatches
         }
 
         Button? template = null;
-        foreach (Button candidate in panelRoot.GetComponentsInChildren<Button>(true))
+        if (gui.m_achievementsPanel.m_achievementDetails != null)
         {
-            if (candidate.transform.IsChildOf(gui.m_achievementsListRoot))
+            foreach (Button candidate in gui.m_achievementsPanel.m_achievementDetails.GetComponentsInChildren<Button>(true))
             {
-                continue;
+                if (!candidate.name.StartsWith("AchievementHelper_"))
+                {
+                    template = candidate;
+                    break;
+                }
             }
-
-            if (gui.m_achievementsPanel.m_achievementDetails != null &&
-                candidate.transform.IsChildOf(gui.m_achievementsPanel.m_achievementDetails.transform))
-            {
-                continue;
-            }
-
-            template = candidate;
-            break;
         }
 
         if (template == null)
         {
+            foreach (Button candidate in container.GetComponentsInChildren<Button>(true))
+            {
+                if (candidate.gameObject == gui.m_achievementsElementPrefab ||
+                    candidate.transform.IsChildOf(gui.m_achievementsListRoot) ||
+                    candidate.transform.Find("icon") != null ||
+                    candidate.name.StartsWith("AchievementHelper_"))
+                {
+                    continue;
+                }
+
+                template = candidate;
+                break;
+            }
+        }
+
+        if (template == null)
+        {
+            Plugin.Log.LogWarning("Could not find template button for Master Reveal All button.");
             return null;
         }
 
-        GameObject clone = UnityEngine.Object.Instantiate(template.gameObject, template.transform.parent);
+        GameObject clone = UnityEngine.Object.Instantiate(template.gameObject, container);
         clone.name = MasterRevealButtonName;
+        clone.SetActive(true);
         clone.transform.SetAsLastSibling();
 
         LayoutElement layoutElement = clone.GetComponent<LayoutElement>() ?? clone.AddComponent<LayoutElement>();
@@ -275,8 +293,8 @@ internal static class InventoryGuiAchievementsPatches
             rt.anchorMin = new Vector2(0f, 1f);
             rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot = new Vector2(0f, 1f);
-            rt.sizeDelta = new Vector2(130f, 30f);
-            rt.anchoredPosition = new Vector2(18f, -12f);
+            rt.sizeDelta = new Vector2(130f, 32f);
+            rt.anchoredPosition = new Vector2(18f, -10f);
         }
 
         TMP_Text? label = clone.GetComponentInChildren<TMP_Text>(true);
