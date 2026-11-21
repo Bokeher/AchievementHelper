@@ -67,7 +67,7 @@ public static class AchievementService
             // 5. Deaths & Quirky
             ["FirstDeath"] = AchievementDisplayMode.Hidden,
             ["DeathByAllTypes"] = AchievementDisplayMode.Revealable,
-            ["DeathByTree"] = AchievementDisplayMode.Revealable,
+            ["DeathByTree"] = AchievementDisplayMode.Simple,
             ["DeathByTreeAll"] = AchievementDisplayMode.Revealable,
             ["DeathByObliterator"] = AchievementDisplayMode.Hidden,
 
@@ -136,7 +136,7 @@ public static class AchievementService
             // 5. Deaths & Quirky
             ["The First of Many"] = AchievementDisplayMode.Hidden,
             ["Are You Alright?"] = AchievementDisplayMode.Revealable,
-            ["Accidents Happen"] = AchievementDisplayMode.Revealable,
+            ["Accidents Happen"] = AchievementDisplayMode.Simple,
             ["That Can't Be an Accident"] = AchievementDisplayMode.Revealable,
             ["Obliterated"] = AchievementDisplayMode.Hidden,
 

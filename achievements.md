@@ -1,4 +1,4 @@
-﻿# Valheim Achievements List (for Behavior Grouping)
+# Valheim Achievements List (for Behavior Grouping)
 
 Valheim 1.0 has **53 official achievements**. Below is the list updated with the **Default In-Game State** (`Visible` vs `Concealed`) observed in your screenshots, plus `Suggested Behavior` and a `Your Decision` column for you to fill in.
 
@@ -79,7 +79,7 @@ Valheim 1.0 has **53 official achievements**. Below is the list updated with the
 | :---------------------------- | :------------------------------------------- | :-------------------- | :------------------------------------ | :------------ |
 | **The First of Many**         | Die for the first time                       | Concealed             | Keep Hidden or Visible                | hidden        |
 | **Are You Alright?**          | Die in every way possible                    | Visible               | Revealable (`???` + button)           | revealable    |
-| **Accidents Happen**          | Get killed by a falling tree                 | Concealed             | Visible                               | revealable    |
+| **Accidents Happen**          | Get killed by a falling tree                 | Concealed             | Visible                               | simple        |
 | **That Can't Be an Accident** | Get killed by every kind of tree             | Concealed             | Visible + Revealable (`???` + button) | revealable    |
 | **Obliterated**               | Die by standing too close to the Obliterator | Concealed             | Keep Hidden (Spoiler)                 | hidden        |
 
