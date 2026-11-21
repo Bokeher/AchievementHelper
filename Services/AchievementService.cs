@@ -705,6 +705,38 @@ public static class AchievementService
     public static bool TryGetCookedVariant(string rawSharedName, out string cookedSharedName) =>
         RawToCookedMap.TryGetValue(rawSharedName, out cookedSharedName);
 
+    public static bool IsRecipeMissingForAchievement(Recipe recipe, out bool isFoodRecipe)
+    {
+        isFoodRecipe = false;
+        string? sharedName = recipe?.m_item?.m_itemData?.m_shared?.m_name;
+        if (string.IsNullOrEmpty(sharedName))
+        {
+            return false;
+        }
+
+        bool isDirectCook = IsFoodCookTarget(sharedName!);
+        bool hasCookedVariant = TryGetCookedVariant(sharedName!, out string cookedName) &&
+                                IsFoodCookTarget(cookedName);
+        isFoodRecipe = isDirectCook || hasCookedVariant;
+
+        if (isDirectCook && !HasCraftedItem(sharedName!))
+        {
+            return true;
+        }
+
+        if (hasCookedVariant && !HasCraftedItem(cookedName))
+        {
+            return true;
+        }
+
+        if (IsItemCraftTarget(sharedName!) && !HasCraftedItem(sharedName!))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     public static bool HasCraftedItem(string sharedName)
     {
         return GetEffectiveDictStat((int)DifficultyRequirement.Any, s => s.m_itemCraftStats, sharedName) >= 1f;
