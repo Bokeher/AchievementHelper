@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using AchievementHelper.Services;
 using HarmonyLib;
@@ -60,13 +62,11 @@ internal static class AchievementsGuiPatches
             return false;
         }
 
-        PlayerProfile playerProfile = Game.instance.GetPlayerProfile();
-        Dictionary<PlayerStatType, float> stats =
-            playerProfile.m_playerStats[(int)achievement.m_difficultyRequirement].m_stats;
+        int diffIndex = (int)achievement.m_difficultyRequirement;
 
         foreach (Achievement.PlayerStatRequirement req in achievement.m_statTrigger)
         {
-            stats.TryGetValue(req.m_stat, out float currentAmount);
+            float currentAmount = AchievementService.GetEffectivePlayerStat(diffIndex, req.m_stat);
             __instance.CreateStatRow(req.m_stat.ToString(), currentAmount, req.m_amountAboveEquals);
         }
 
@@ -78,23 +78,15 @@ internal static class AchievementsGuiPatches
             }
         }
 
-        __instance.StartCoroutine(__instance.PopulateEnemyStats(achievement, playerProfile));
-        __instance.StartCoroutine(__instance.PopulateDetailPanel(
-            achievement.m_foodEatenTriggers, achievement, playerProfile, s => s.m_foodEatenStats));
-        __instance.StartCoroutine(__instance.PopulateDetailPanel(
-            achievement.m_itemCraftTriggers, achievement, playerProfile, s => s.m_itemCraftStats));
-        __instance.StartCoroutine(__instance.PopulateDetailPanel(
-            achievement.m_itemPickupTriggers, achievement, playerProfile, s => s.m_itemPickupStats));
-        __instance.StartCoroutine(__instance.PopulateDetailPanel(
-            achievement.m_knownCommandsTriggers, achievement, playerProfile, s => s.m_knownCommands));
-        __instance.StartCoroutine(__instance.PopulateDetailPanel(
-            achievement.m_knownWorldKeysTriggers, achievement, playerProfile, s => s.m_knownWorldKeys));
-        __instance.StartCoroutine(__instance.PopulateDetailPanel(
-            achievement.m_knownWorldTriggers, achievement, playerProfile, s => s.m_knownWorlds));
-        __instance.StartCoroutine(__instance.PopulateDetailPanel(
-            achievement.m_pickableTriggers, achievement, playerProfile, s => s.m_pickableStats));
-        __instance.StartCoroutine(__instance.PopulateDetailPanel(
-            achievement.m_piecePlacedTriggers, achievement, playerProfile, s => s.m_piecesPlacedStats));
+        __instance.StartCoroutine(PopulateEnemyStatsEffective(__instance, achievement, diffIndex));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_foodEatenTriggers, diffIndex, s => s.m_foodEatenStats));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemCraftTriggers, diffIndex, s => s.m_itemCraftStats));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemPickupTriggers, diffIndex, s => s.m_itemPickupStats));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownCommandsTriggers, diffIndex, s => s.m_knownCommands));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldKeysTriggers, diffIndex, s => s.m_knownWorldKeys));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldTriggers, diffIndex, s => s.m_knownWorlds));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_pickableTriggers, diffIndex, s => s.m_pickableStats));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_piecePlacedTriggers, diffIndex, s => s.m_piecesPlacedStats));
 
         if (__instance.m_detailsScrollbar != null)
         {
@@ -102,6 +94,42 @@ internal static class AchievementsGuiPatches
         }
 
         return false;
+    }
+
+    private static IEnumerator PopulateEnemyStatsEffective(AchievementsGui gui, Achievement achievement, int diffIndex)
+    {
+        int count = 0;
+        foreach (Achievement.EnemyStatRequirement req in achievement.m_enemyStatsTriggers)
+        {
+            float currentAmount = AchievementService.GetEffectiveEnemyStat(diffIndex, req.m_modifier, req.m_stat);
+            gui.CreateStatRow(req.m_stat, currentAmount, req.m_amount);
+            count++;
+            if (count >= gui.m_detailStatsPerFrame)
+            {
+                yield return null;
+                count = 0;
+            }
+        }
+    }
+
+    private static IEnumerator PopulateDetailPanelEffective(
+        AchievementsGui gui,
+        List<Achievement.DictStatRequirement> triggers,
+        int diffIndex,
+        Func<PlayerProfile.PlayerStats, Dictionary<string, float>> selector)
+    {
+        int count = 0;
+        foreach (Achievement.DictStatRequirement req in triggers)
+        {
+            float currentAmount = AchievementService.GetEffectiveDictStat(diffIndex, selector, req.m_stat);
+            gui.CreateStatRow(req.m_stat, currentAmount, req.m_amount);
+            count++;
+            if (count >= gui.m_detailStatsPerFrame)
+            {
+                yield return null;
+                count = 0;
+            }
+        }
     }
 
     [HarmonyPrefix]

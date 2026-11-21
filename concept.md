@@ -1,7 +1,13 @@
 # Mod Concept
 
 ## General Rules
-- **World Difficulty:** Achievement status checks (undefeated enemies, missing items, pieces, etc.) respect the current world's difficulty setting.
+- **World Difficulty:** Difficulty-dependent achievement checks (such as undefeated enemies for `KillAllCreaturesHard` on Hard+ worlds) respect the current world's difficulty, while `Any`-difficulty achievements (crafting, cooking, eating, building, trophies) check `DifficultyRequirement.Any`.
+- **Progress Scope (Config):** Configurable between `Character` (default) and `Global` without editing character (`.fch`) or world (`.db`) files:
+  - `Character`: Tracks and displays progress strictly for the current character.
+  - `Global`: Aggregates stats across all characters in memory (sum for accumulative counters and lists, max for record stats) and unlocks achievements when combined progress reaches 100%.
+  - **Count Cheated Characters (Config):** Optional setting (default `false`) controlling whether cheated characters (`m_usedCheats`) are included in `Global` progress.
+- **Sync Steam Unlocks (Config):** Separate setting (default `false`) that marks achievements already completed on Steam as unlocked in-game.
+- **Feature Toggles (Config):** Individual mod features (tooltips, filters, enemy indicators, building icons, only hide spoiler achievements) are configurable via BepInEx config.
 
 ## 1. Enemies
 - **Undefeated Indicator:** If an enemy has never been killed, display an icon next to its stars (or where stars would appear) or on the opposite side of the health bar indicating that it has not been defeated yet.

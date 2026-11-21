@@ -21,7 +21,7 @@ internal static class ItemTooltipPatches
         bool appending,
         ref string __result)
     {
-        if (appending || !Plugin.ModEnabled.Value || Player.m_localPlayer == null || item?.m_shared == null)
+        if (appending || !Plugin.ModEnabled.Value || !Plugin.ShowItemTooltips.Value || Player.m_localPlayer == null || item?.m_shared == null)
         {
             return;
         }

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Splatform;
+using Steamworks;
 using UnityEngine;
 
 namespace AchievementHelper.Services;
@@ -145,8 +147,18 @@ public static class AchievementService
             ["Kings and Queens of Valheim"] = AchievementDisplayMode.All,
         };
 
+    private static readonly HashSet<PlayerStatType> RecordStatTypes = new()
+    {
+        PlayerStatType.ConsecutiveDaysSurvivedMax,
+        PlayerStatType.MaxComfort,
+        PlayerStatType.MaxBuildingHeight,
+        PlayerStatType.MaxBuildingHeightWorld
+    };
+
     private static readonly HashSet<string> RevealedIds = new(StringComparer.OrdinalIgnoreCase);
     private static bool _revealedLoaded;
+
+    private static PlayerProfile.PlayerStats[]? _otherCharactersStats;
 
     private static readonly HashSet<string> CraftTargets = new();
     private static readonly HashSet<string> CookTargets = new();
@@ -160,7 +172,34 @@ public static class AchievementService
     {
         EnsureRevealedLoaded();
         RebuildTriggerCaches();
+        RefreshProgressScope(recheckUnlocks: true);
         DumpAllAchievements();
+    }
+
+    public static void RefreshProgressScope(bool recheckUnlocks)
+    {
+        if (Plugin.ProgressScopeConfig.Value == ProgressScope.Global)
+        {
+            RebuildOtherCharactersCache();
+        }
+        else
+        {
+            _otherCharactersStats = null;
+        }
+
+        if (!recheckUnlocks || Achievements.m_instance == null || Game.instance == null)
+        {
+            return;
+        }
+
+        ReevaluateAllAchievements();
+
+        if (InventoryGui.instance != null &&
+            InventoryGui.instance.m_achievementsPanel != null &&
+            InventoryGui.instance.m_achievementsPanel.gameObject.activeInHierarchy)
+        {
+            InventoryGui.instance.UpdateAchievementsList();
+        }
     }
 
     public static AchievementDisplayMode GetDisplayMode(Achievement achievement)
@@ -263,16 +302,10 @@ public static class AchievementService
         }
 
         int diffIndex = (int)achievement.m_difficultyRequirement;
-        if (diffIndex < 0 || diffIndex >= profile.m_playerStats.Length)
-        {
-            return false;
-        }
-
-        PlayerProfile.PlayerStats stats = profile.m_playerStats[diffIndex];
 
         foreach (var req in achievement.m_statTrigger)
         {
-            stats.m_stats.TryGetValue(req.m_stat, out float cur);
+            float cur = GetEffectivePlayerStat(diffIndex, req.m_stat);
             if (cur < req.m_amountAboveEquals && !IsStatRevealed(achievement, req.m_stat.ToString()))
                 return true;
         }
@@ -285,29 +318,30 @@ public static class AchievementService
 
         foreach (var req in achievement.m_enemyStatsTriggers)
         {
-            stats.m_enemyStats[(int)req.m_modifier].TryGetValue(req.m_stat, out float cur);
+            float cur = GetEffectiveEnemyStat(diffIndex, req.m_modifier, req.m_stat);
             if (cur < req.m_amount && !IsStatRevealed(achievement, req.m_stat))
                 return true;
         }
 
-        return HasUnrevealedDictTrigger(achievement, achievement.m_foodEatenTriggers, stats.m_foodEatenStats) ||
-               HasUnrevealedDictTrigger(achievement, achievement.m_itemCraftTriggers, stats.m_itemCraftStats) ||
-               HasUnrevealedDictTrigger(achievement, achievement.m_itemPickupTriggers, stats.m_itemPickupStats) ||
-               HasUnrevealedDictTrigger(achievement, achievement.m_knownCommandsTriggers, stats.m_knownCommands) ||
-               HasUnrevealedDictTrigger(achievement, achievement.m_knownWorldKeysTriggers, stats.m_knownWorldKeys) ||
-               HasUnrevealedDictTrigger(achievement, achievement.m_knownWorldTriggers, stats.m_knownWorlds) ||
-               HasUnrevealedDictTrigger(achievement, achievement.m_pickableTriggers, stats.m_pickableStats) ||
-               HasUnrevealedDictTrigger(achievement, achievement.m_piecePlacedTriggers, stats.m_piecesPlacedStats);
+        return HasUnrevealedDictTrigger(achievement, diffIndex, achievement.m_foodEatenTriggers, s => s.m_foodEatenStats) ||
+               HasUnrevealedDictTrigger(achievement, diffIndex, achievement.m_itemCraftTriggers, s => s.m_itemCraftStats) ||
+               HasUnrevealedDictTrigger(achievement, diffIndex, achievement.m_itemPickupTriggers, s => s.m_itemPickupStats) ||
+               HasUnrevealedDictTrigger(achievement, diffIndex, achievement.m_knownCommandsTriggers, s => s.m_knownCommands) ||
+               HasUnrevealedDictTrigger(achievement, diffIndex, achievement.m_knownWorldKeysTriggers, s => s.m_knownWorldKeys) ||
+               HasUnrevealedDictTrigger(achievement, diffIndex, achievement.m_knownWorldTriggers, s => s.m_knownWorlds) ||
+               HasUnrevealedDictTrigger(achievement, diffIndex, achievement.m_pickableTriggers, s => s.m_pickableStats) ||
+               HasUnrevealedDictTrigger(achievement, diffIndex, achievement.m_piecePlacedTriggers, s => s.m_piecesPlacedStats);
     }
 
     private static bool HasUnrevealedDictTrigger(
         Achievement achievement,
+        int diffIndex,
         List<Achievement.DictStatRequirement> triggers,
-        Dictionary<string, float> dict)
+        Func<PlayerProfile.PlayerStats, Dictionary<string, float>> selector)
     {
         foreach (var req in triggers)
         {
-            dict.TryGetValue(req.m_stat, out float cur);
+            float cur = GetEffectiveDictStat(diffIndex, selector, req.m_stat);
             if (cur < req.m_amount && !IsStatRevealed(achievement, req.m_stat))
                 return true;
         }
@@ -492,13 +526,12 @@ public static class AchievementService
             return 0f;
         }
 
-        PlayerProfile.PlayerStats stats = profile.m_playerStats[diffIndex];
         float totalRatio = 0f;
         int totalCount = 0;
 
         foreach (Achievement.PlayerStatRequirement req in achievement.m_statTrigger)
         {
-            stats.m_stats.TryGetValue(req.m_stat, out float current);
+            float current = GetEffectivePlayerStat(diffIndex, req.m_stat);
             float target = Mathf.Max(1f, req.m_amountAboveEquals);
             totalRatio += Mathf.Clamp01(current / target);
             totalCount++;
@@ -506,21 +539,21 @@ public static class AchievementService
 
         foreach (Achievement.EnemyStatRequirement req in achievement.m_enemyStatsTriggers)
         {
-            stats.m_enemyStats[(int)req.m_modifier].TryGetValue(req.m_stat, out float current);
-            totalRatio += req.IsMet(stats.m_enemyStats[(int)req.m_modifier], achievement.m_difficultyRequirement)
+            bool hasVal = TryGetEffectiveEnemyStat(diffIndex, req.m_modifier, req.m_stat, out float current);
+            totalRatio += EvaluateOperator(hasVal, current, req.m_amount, req.m_operator)
                 ? 1f
                 : Mathf.Clamp01(current / Mathf.Max(1f, req.m_amount));
             totalCount++;
         }
 
-        AccumulateDictTriggers(achievement.m_itemCraftTriggers, stats.m_itemCraftStats, ref totalRatio, ref totalCount);
-        AccumulateDictTriggers(achievement.m_itemPickupTriggers, stats.m_itemPickupStats, ref totalRatio, ref totalCount);
-        AccumulateDictTriggers(achievement.m_foodEatenTriggers, stats.m_foodEatenStats, ref totalRatio, ref totalCount);
-        AccumulateDictTriggers(achievement.m_piecePlacedTriggers, stats.m_piecesPlacedStats, ref totalRatio, ref totalCount);
-        AccumulateDictTriggers(achievement.m_pickableTriggers, stats.m_pickableStats, ref totalRatio, ref totalCount);
-        AccumulateDictTriggers(achievement.m_knownCommandsTriggers, stats.m_knownCommands, ref totalRatio, ref totalCount);
-        AccumulateDictTriggers(achievement.m_knownWorldKeysTriggers, stats.m_knownWorldKeys, ref totalRatio, ref totalCount);
-        AccumulateDictTriggers(achievement.m_knownWorldTriggers, stats.m_knownWorlds, ref totalRatio, ref totalCount);
+        AccumulateDictTriggers(diffIndex, achievement.m_itemCraftTriggers, s => s.m_itemCraftStats, ref totalRatio, ref totalCount);
+        AccumulateDictTriggers(diffIndex, achievement.m_itemPickupTriggers, s => s.m_itemPickupStats, ref totalRatio, ref totalCount);
+        AccumulateDictTriggers(diffIndex, achievement.m_foodEatenTriggers, s => s.m_foodEatenStats, ref totalRatio, ref totalCount);
+        AccumulateDictTriggers(diffIndex, achievement.m_piecePlacedTriggers, s => s.m_piecesPlacedStats, ref totalRatio, ref totalCount);
+        AccumulateDictTriggers(diffIndex, achievement.m_pickableTriggers, s => s.m_pickableStats, ref totalRatio, ref totalCount);
+        AccumulateDictTriggers(diffIndex, achievement.m_knownCommandsTriggers, s => s.m_knownCommands, ref totalRatio, ref totalCount);
+        AccumulateDictTriggers(diffIndex, achievement.m_knownWorldKeysTriggers, s => s.m_knownWorldKeys, ref totalRatio, ref totalCount);
+        AccumulateDictTriggers(diffIndex, achievement.m_knownWorldTriggers, s => s.m_knownWorlds, ref totalRatio, ref totalCount);
 
         foreach (Achievement other in achievement.m_otherAchievementTriggers)
         {
@@ -529,6 +562,138 @@ public static class AchievementService
         }
 
         return totalCount > 0 ? (totalRatio / totalCount) * 100f : 0f;
+    }
+
+    public static bool EvaluateAchievementUnlocked(Achievement achievement)
+    {
+        if (achievement == null)
+        {
+            return false;
+        }
+
+        if (achievement.m_unlocked)
+        {
+            return true;
+        }
+
+        PlayerProfile? profile = Game.instance != null ? Game.instance.GetPlayerProfile() : null;
+        if (profile == null)
+        {
+            return false;
+        }
+
+        int diffIndex = (int)achievement.m_difficultyRequirement;
+        if (diffIndex < 0 || diffIndex >= profile.m_playerStats.Length)
+        {
+            return false;
+        }
+
+        foreach (Achievement.PlayerStatRequirement req in achievement.m_statTrigger)
+        {
+            if (GetEffectivePlayerStat(diffIndex, req.m_stat) < req.m_amountAboveEquals)
+                return false;
+        }
+
+        if (!AreDictTriggersMet(diffIndex, achievement.m_knownWorldTriggers, s => s.m_knownWorlds)) return false;
+        if (!AreDictTriggersMet(diffIndex, achievement.m_knownWorldKeysTriggers, s => s.m_knownWorldKeys)) return false;
+        if (!AreDictTriggersMet(diffIndex, achievement.m_knownCommandsTriggers, s => s.m_knownCommands)) return false;
+
+        foreach (Achievement.EnemyStatRequirement req in achievement.m_enemyStatsTriggers)
+        {
+            bool hasVal = TryGetEffectiveEnemyStat(diffIndex, req.m_modifier, req.m_stat, out float current);
+            if (!EvaluateOperator(hasVal, current, req.m_amount, req.m_operator))
+                return false;
+        }
+
+        if (!AreDictTriggersMet(diffIndex, achievement.m_itemPickupTriggers, s => s.m_itemPickupStats)) return false;
+        if (!AreDictTriggersMet(diffIndex, achievement.m_itemCraftTriggers, s => s.m_itemCraftStats)) return false;
+        if (!AreDictTriggersMet(diffIndex, achievement.m_pickableTriggers, s => s.m_pickableStats)) return false;
+        if (!AreDictTriggersMet(diffIndex, achievement.m_foodEatenTriggers, s => s.m_foodEatenStats)) return false;
+        if (!AreDictTriggersMet(diffIndex, achievement.m_piecePlacedTriggers, s => s.m_piecesPlacedStats)) return false;
+
+        foreach (Achievement other in achievement.m_otherAchievementTriggers)
+        {
+            if (other != null && !other.m_unlocked)
+                return false;
+        }
+
+        return true;
+    }
+
+    public static float GetEffectivePlayerStat(int diffIndex, PlayerStatType stat)
+    {
+        PlayerProfile? current = Game.instance != null ? Game.instance.GetPlayerProfile() : null;
+        float currentVal = 0f;
+
+        if (current != null &&
+            diffIndex >= 0 && diffIndex < current.m_playerStats.Length &&
+            IncludeCurrentProfileInScope(current))
+        {
+            current.m_playerStats[diffIndex].m_stats.TryGetValue(stat, out currentVal);
+        }
+
+        if (Plugin.ProgressScopeConfig.Value != ProgressScope.Global ||
+            _otherCharactersStats == null ||
+            diffIndex < 0 || diffIndex >= _otherCharactersStats.Length)
+        {
+            return currentVal;
+        }
+
+        _otherCharactersStats[diffIndex].m_stats.TryGetValue(stat, out float otherVal);
+        return RecordStatTypes.Contains(stat)
+            ? Mathf.Max(currentVal, otherVal)
+            : currentVal + otherVal;
+    }
+
+    public static float GetEffectiveEnemyStat(int diffIndex, KillModifiers modifier, string statKey)
+    {
+        TryGetEffectiveEnemyStat(diffIndex, modifier, statKey, out float value);
+        return value;
+    }
+
+    public static bool TryGetEffectiveEnemyStat(int diffIndex, KillModifiers modifier, string statKey, out float value)
+    {
+        int modIndex = (int)modifier;
+        return TryGetEffectiveDictStat(diffIndex, s => s.m_enemyStats[modIndex], statKey, out value);
+    }
+
+    public static float GetEffectiveDictStat(
+        int diffIndex,
+        Func<PlayerProfile.PlayerStats, Dictionary<string, float>> selector,
+        string statKey)
+    {
+        TryGetEffectiveDictStat(diffIndex, selector, statKey, out float value);
+        return value;
+    }
+
+    public static bool TryGetEffectiveDictStat(
+        int diffIndex,
+        Func<PlayerProfile.PlayerStats, Dictionary<string, float>> selector,
+        string statKey,
+        out float value)
+    {
+        PlayerProfile? current = Game.instance != null ? Game.instance.GetPlayerProfile() : null;
+        bool hasCurrent = false;
+        float currentVal = 0f;
+
+        if (current != null &&
+            diffIndex >= 0 && diffIndex < current.m_playerStats.Length &&
+            IncludeCurrentProfileInScope(current))
+        {
+            hasCurrent = selector(current.m_playerStats[diffIndex]).TryGetValue(statKey, out currentVal);
+        }
+
+        if (Plugin.ProgressScopeConfig.Value != ProgressScope.Global ||
+            _otherCharactersStats == null ||
+            diffIndex < 0 || diffIndex >= _otherCharactersStats.Length)
+        {
+            value = currentVal;
+            return hasCurrent;
+        }
+
+        bool hasOther = selector(_otherCharactersStats[diffIndex]).TryGetValue(statKey, out float otherVal);
+        value = currentVal + otherVal;
+        return hasCurrent || hasOther;
     }
 
     public static bool IsItemCraftTarget(string sharedName) => CraftTargets.Contains(sharedName);
@@ -542,74 +707,292 @@ public static class AchievementService
 
     public static bool HasCraftedItem(string sharedName)
     {
-        return TryGetCurrentWorldStats(out var stats) &&
-               stats.m_itemCraftStats.TryGetValue(sharedName, out float count) &&
-               count >= 1f;
+        return GetEffectiveDictStat((int)DifficultyRequirement.Any, s => s.m_itemCraftStats, sharedName) >= 1f;
     }
 
     public static bool HasEatenFood(string sharedName)
     {
-        return TryGetCurrentWorldStats(out var stats) &&
-               stats.m_foodEatenStats.TryGetValue(sharedName, out float count) &&
-               count >= 1f;
+        return GetEffectiveDictStat((int)DifficultyRequirement.Any, s => s.m_foodEatenStats, sharedName) >= 1f;
     }
 
     public static bool HasBuiltPiece(string pieceName)
     {
-        return TryGetCurrentWorldStats(out var stats) &&
-               stats.m_piecesPlacedStats.TryGetValue(pieceName, out float count) &&
-               count >= 1f;
+        return GetEffectiveDictStat((int)DifficultyRequirement.Any, s => s.m_piecesPlacedStats, pieceName) >= 1f;
     }
 
     public static bool HasKilledEnemy(string enemyName)
     {
-        if (!TryGetCurrentWorldStats(out var stats))
-        {
-            return false;
-        }
-
-        return stats.m_enemyStats[0].TryGetValue(enemyName, out float count) && count >= 1f;
+        DifficultyRequirement currentDiff = Achievements.GetCurrentAchievementDifficulty();
+        int diffIndex = currentDiff >= DifficultyRequirement.Hard
+            ? (int)DifficultyRequirement.Hard
+            : (int)DifficultyRequirement.Any;
+        return GetEffectiveEnemyStat(diffIndex, 0, enemyName) >= 1f;
     }
 
     public static bool HasPickedUpTrophy(string trophySharedName)
     {
-        return TryGetCurrentWorldStats(out var stats) &&
-               stats.m_itemPickupStats.TryGetValue(trophySharedName, out float count) &&
-               count >= 1f;
+        return GetEffectiveDictStat((int)DifficultyRequirement.Any, s => s.m_itemPickupStats, trophySharedName) >= 1f;
     }
 
-    private static bool TryGetCurrentWorldStats(out PlayerProfile.PlayerStats stats)
+    private static bool IncludeCurrentProfileInScope(PlayerProfile current)
     {
-        PlayerProfile? profile = Game.instance != null ? Game.instance.GetPlayerProfile() : null;
-        if (profile == null)
+        if (Plugin.ProgressScopeConfig.Value != ProgressScope.Global)
         {
-            stats = null!;
+            return true;
+        }
+
+        return !current.m_usedCheats || Plugin.CountCheatedCharacters.Value;
+    }
+
+    private static bool AreDictTriggersMet(
+        int diffIndex,
+        List<Achievement.DictStatRequirement> triggers,
+        Func<PlayerProfile.PlayerStats, Dictionary<string, float>> selector)
+    {
+        foreach (Achievement.DictStatRequirement req in triggers)
+        {
+            bool hasVal = TryGetEffectiveDictStat(diffIndex, selector, req.m_stat, out float current);
+            if (!EvaluateOperator(hasVal, current, req.m_amount, req.m_operator))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool EvaluateOperator(bool hasValue, float current, float target, RequirementOperator op)
+    {
+        if (!hasValue)
+        {
             return false;
         }
 
-        int diffIndex = Achievements.GetCurrentAchievementDifficultyIndex();
-        if (diffIndex < 0 || diffIndex >= profile.m_playerStats.Length)
+        return op switch
         {
-            diffIndex = (int)DifficultyRequirement.Any;
-        }
-
-        stats = profile.m_playerStats[diffIndex];
-        return stats != null;
+            RequirementOperator.AboveEquals => current >= target,
+            RequirementOperator.BelowEquals => current <= target,
+            RequirementOperator.Equals => current == target,
+            RequirementOperator.NotEquals => current != target,
+            _ => false
+        };
     }
 
     private static void AccumulateDictTriggers(
+        int diffIndex,
         List<Achievement.DictStatRequirement> triggers,
-        Dictionary<string, float> dict,
+        Func<PlayerProfile.PlayerStats, Dictionary<string, float>> selector,
         ref float totalRatio,
         ref int totalCount)
     {
         foreach (Achievement.DictStatRequirement req in triggers)
         {
-            dict.TryGetValue(req.m_stat, out float current);
+            float current = GetEffectiveDictStat(diffIndex, selector, req.m_stat);
             float target = Mathf.Max(1f, req.m_amount);
             totalRatio += Mathf.Clamp01(current / target);
             totalCount++;
         }
+    }
+
+    private static void RebuildOtherCharactersCache()
+    {
+        PlayerProfile? current = Game.instance != null ? Game.instance.GetPlayerProfile() : null;
+        if (current == null)
+        {
+            _otherCharactersStats = null;
+            return;
+        }
+
+        int slotCount = current.m_playerStats.Length;
+        PlayerProfile.PlayerStats[] combined = new PlayerProfile.PlayerStats[slotCount];
+        for (int i = 0; i < slotCount; i++)
+        {
+            combined[i] = new PlayerProfile.PlayerStats();
+        }
+
+        string currentFilename = current.GetFilename() ?? string.Empty;
+        long currentPlayerId = current.GetPlayerID();
+        int mergedCount = 0;
+
+        try
+        {
+            List<PlayerProfile> profiles = SaveSystem.GetAllPlayerProfiles();
+            foreach (PlayerProfile other in profiles)
+            {
+                if (other == null) continue;
+
+                string otherFilename = other.GetFilename() ?? string.Empty;
+                if ((!string.IsNullOrEmpty(currentFilename) &&
+                     otherFilename.Equals(currentFilename, StringComparison.OrdinalIgnoreCase)) ||
+                    (currentPlayerId != 0L && other.GetPlayerID() == currentPlayerId))
+                {
+                    continue;
+                }
+
+                if (other.m_usedCheats && !Plugin.CountCheatedCharacters.Value)
+                {
+                    continue;
+                }
+
+                int maxSlots = Mathf.Min(slotCount, other.m_playerStats.Length);
+                for (int i = 0; i < maxSlots; i++)
+                {
+                    MergeStatsSlot(combined[i], other.m_playerStats[i]);
+                }
+
+                mergedCount++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.LogWarning($"Failed to aggregate other character profiles: {ex.Message}");
+        }
+
+        _otherCharactersStats = combined;
+        Plugin.Log.LogInfo($"Global progress cache built from {mergedCount} other character(s).");
+    }
+
+    private static void MergeStatsSlot(PlayerProfile.PlayerStats target, PlayerProfile.PlayerStats source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        foreach (KeyValuePair<PlayerStatType, float> kvp in source.m_stats)
+        {
+            if (kvp.Value == 0f) continue;
+
+            target.m_stats.TryGetValue(kvp.Key, out float existing);
+            target.m_stats[kvp.Key] = RecordStatTypes.Contains(kvp.Key)
+                ? Mathf.Max(existing, kvp.Value)
+                : existing + kvp.Value;
+        }
+
+        MergeStringDict(target.m_knownWorlds, source.m_knownWorlds);
+        MergeStringDict(target.m_knownWorldKeys, source.m_knownWorldKeys);
+        MergeStringDict(target.m_knownCommands, source.m_knownCommands);
+        MergeStringDict(target.m_itemPickupStats, source.m_itemPickupStats);
+        MergeStringDict(target.m_itemCraftStats, source.m_itemCraftStats);
+        MergeStringDict(target.m_pickableStats, source.m_pickableStats);
+        MergeStringDict(target.m_foodEatenStats, source.m_foodEatenStats);
+        MergeStringDict(target.m_piecesPlacedStats, source.m_piecesPlacedStats);
+
+        int enemySlots = Mathf.Min(target.m_enemyStats.Length, source.m_enemyStats.Length);
+        for (int i = 0; i < enemySlots; i++)
+        {
+            MergeStringDict(target.m_enemyStats[i], source.m_enemyStats[i]);
+        }
+    }
+
+    private static void MergeStringDict(Dictionary<string, float> target, Dictionary<string, float> source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        foreach (KeyValuePair<string, float> kvp in source)
+        {
+            if (kvp.Value == 0f) continue;
+
+            target.TryGetValue(kvp.Key, out float existing);
+            target[kvp.Key] = existing + kvp.Value;
+        }
+    }
+
+    private static void ReevaluateAllAchievements()
+    {
+        if (Achievements.m_instance == null)
+        {
+            return;
+        }
+
+        List<Achievement> allAchievements = new();
+        foreach (AchievementList list in Achievements.m_instance.m_achievementLists)
+        {
+            foreach (Achievement ach in list.m_achievements)
+            {
+                if (ach != null)
+                {
+                    allAchievements.Add(ach);
+                }
+            }
+        }
+
+        foreach (Achievement ach in allAchievements)
+        {
+            ach.m_unlocked = false;
+        }
+
+        if (Plugin.SyncSteamUnlocks.Value)
+        {
+            foreach (Achievement ach in allAchievements)
+            {
+                if (IsUnlockedOnSteam(ach))
+                {
+                    ach.m_unlocked = true;
+                }
+            }
+        }
+
+        bool anyNewlyUnlocked = false;
+        // Pass 1: standard achievements
+        foreach (Achievement ach in allAchievements)
+        {
+            if (ach.m_otherAchievementTriggers.Count > 0 || ach.m_unlocked)
+            {
+                continue;
+            }
+
+            if (ach.m_lenientBuildAchievement)
+            {
+                Piece.CheckLenientBuildAchUnlocked(ach, false, false);
+            }
+
+            if (ach.CheckUnlocked())
+            {
+                Achievements.AchievementEvent(ach, false, false);
+                anyNewlyUnlocked = true;
+            }
+        }
+
+        // Pass 2: meta-achievements (Child of Odin, Kings and Queens of Valheim)
+        foreach (Achievement ach in allAchievements)
+        {
+            if (ach.m_otherAchievementTriggers.Count == 0 || ach.m_unlocked)
+            {
+                continue;
+            }
+
+            if (ach.CheckUnlocked())
+            {
+                Achievements.AchievementEvent(ach, false, false);
+                anyNewlyUnlocked = true;
+            }
+        }
+
+        if (anyNewlyUnlocked)
+        {
+            PlatformManager.DistributionPlatform?.AchievementManager?.Synchronize();
+        }
+    }
+
+    private static bool IsUnlockedOnSteam(Achievement achievement)
+    {
+        try
+        {
+            string platformId = Achievements.GetAchievementInternalPlatformId(achievement);
+            if (!string.IsNullOrEmpty(platformId) &&
+                SteamUserStats.GetAchievement(platformId, out bool achieved))
+            {
+                return achieved;
+            }
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.LogDebug($"Steam unlock check skipped for {achievement.m_id}: {ex.Message}");
+        }
+
+        return false;
     }
 
     private static void EnsureRevealedLoaded()
