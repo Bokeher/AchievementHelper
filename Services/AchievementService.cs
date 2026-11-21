@@ -389,7 +389,7 @@ public static class AchievementService
         }
 
         AchievementDisplayMode mode = GetDisplayMode(achievement);
-        if (Plugin.DisableNonBossHiding.Value && mode != AchievementDisplayMode.Hidden)
+        if (Plugin.OnlyHideSpoilerAchievements.Value && mode != AchievementDisplayMode.Hidden)
         {
             return false;
         }

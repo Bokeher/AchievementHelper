@@ -17,7 +17,7 @@ public class Plugin : BaseUnityPlugin
     internal static Plugin Instance = null!;
 
     internal static ConfigEntry<bool> ModEnabled = null!;
-    internal static ConfigEntry<bool> DisableNonBossHiding = null!;
+    internal static ConfigEntry<bool> OnlyHideSpoilerAchievements = null!;
     internal static ConfigEntry<bool> MasterRevealAll = null!;
     internal static ConfigEntry<string> RevealedAchievementIds = null!;
 
@@ -29,7 +29,7 @@ public class Plugin : BaseUnityPlugin
         Log = Logger;
 
         ModEnabled = Config.Bind("General", "Enabled", true, "Enable or disable AchievementHelper.");
-        DisableNonBossHiding = Config.Bind("Achievements", "DisableNonBossHiding", true, "Show non-boss concealed achievements (e.g., tree death achievements).");
+        OnlyHideSpoilerAchievements = Config.Bind("Achievements", "OnlyHideSpoilerAchievements", true, "Only keep spoiler and boss achievements concealed; show non-spoiler concealed achievements.");
         MasterRevealAll = Config.Bind("Achievements", "MasterRevealAll", false, "Reveal all hidden/spoiler achievements and conditions.");
         RevealedAchievementIds = Config.Bind("Achievements", "RevealedAchievementIds", "", "Comma-separated list of achievement IDs permanently revealed by the user.");
 

@@ -8,7 +8,7 @@
 - **Missing Trophy Indicator:** If an enemy has not dropped its trophy yet, display a trophy icon.
 
 ## 2. Achievements Tab
-- **Disable Hiding for Non-Boss Achievements:** Add an option to disable hiding for non-boss achievements. Boss-defeat achievements (e.g., "Kill Boss X") remain hidden, while achievements such as "Get killed by all types of trees" should be visible.
+- **Only Hide Spoiler Achievements:** Keep boss-defeat and spoiler achievements (`hidden`) concealed, while showing non-spoiler concealed achievements (e.g., "Get killed by all types of trees").
 - **Details Window Title:** Replace the generic "ACHIEVEMENT DETAILS" header with the actual achievement name.
 - **Reveal / Hide Buttons:** By default, requirements are shown as `???`. Clicking a `???` row reveals it, and pressing **Reveal** in the corner of the frame reveals all conditions for that achievement. Whenever at least one condition is revealed (and Master Reveal All is off), a **Hide** button appears to re-hide that achievement. Revealed state is saved permanently.
 - **Master Reveal All / Hide All Button:** Add a single master toggle button in the corner of the achievements screen to reveal all spoiler/hidden achievements at once (**Reveal All**, with a confirmation click), or reset all revealed achievements and conditions back to hidden (**Hide All**). State is saved permanently.
