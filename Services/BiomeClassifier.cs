@@ -7,28 +7,89 @@ namespace AchievementHelper.Services;
 
 public static class BiomeClassifier
 {
-    // Manual enemy overrides by Character.m_name (dungeon-only or special enemies not in SpawnSystem)
+    // Manual enemy overrides by Character.m_name (bosses, minibosses, dungeon/location-only enemies, summons, and biome overrides)
     private static readonly Dictionary<string, BiomeTier> EnemyBiomeOverrides =
         new(StringComparer.Ordinal)
         {
-            // Black Forest (Burial Chambers)
+            // Meadows
+            ["$enemy_eikthyr"] = BiomeTier.Meadows,
+            ["$enemy_boarpiggy"] = BiomeTier.Meadows,
+            ["$piece_trainingdummy"] = BiomeTier.Meadows,
+
+            // Black Forest
+            ["$enemy_gdking"] = BiomeTier.BlackForest,
+            ["$enemy_skeletonfire"] = BiomeTier.BlackForest, // Brenna
             ["$enemy_ghost"] = BiomeTier.BlackForest,
             ["$enemy_skeleton_poison"] = BiomeTier.BlackForest,
 
-            // Mountain (Frost Caves)
+            // Swamp
+            ["$enemy_bonemass"] = BiomeTier.Swamp,
+            ["$enemy_draugr"] = BiomeTier.Swamp, // Override rare Meadows Draugr Village spawns
+            ["$enemy_draugrelite"] = BiomeTier.Swamp,
+            ["$enemy_surtling"] = BiomeTier.Swamp,
+            ["$enemy_kvastur"] = BiomeTier.Swamp,
+
+            // Mountain
+            ["$enemy_dragon"] = BiomeTier.Mountain, // Moder
+            ["$enemy_fenringcultist_hildir"] = BiomeTier.Mountain, // Geirrhafa
             ["$enemy_bat"] = BiomeTier.Mountain,
             ["$enemy_ulv"] = BiomeTier.Mountain,
             ["$enemy_fenringcultist"] = BiomeTier.Mountain,
+            ["$enemy_wolfcub"] = BiomeTier.Mountain,
 
-            // Mistlands (Infested Mines & Dvergr structures)
+            // Plains
+            ["$enemy_goblinking"] = BiomeTier.Plains, // Yagluth
+            ["$enemy_goblinbrute_hildircombined"] = BiomeTier.Plains, // Zil & Thungr
+            ["$enemy_goblin_hildir"] = BiomeTier.Plains, // Zil
+            ["$enemy_goblinshaman"] = BiomeTier.Plains,
+            ["$enemy_blobtar"] = BiomeTier.Plains, // Growth
+            ["$enemy_loxcalf"] = BiomeTier.Plains,
+            ["$enemy_chicken"] = BiomeTier.Plains,
+            ["$enemy_hen"] = BiomeTier.Plains,
+
+            // Mistlands
+            ["$enemy_seekerqueen"] = BiomeTier.Mistlands,
             ["$enemy_tick"] = BiomeTier.Mistlands,
             ["$enemy_seeker_brood"] = BiomeTier.Mistlands,
             ["$enemy_dverger"] = BiomeTier.Mistlands,
-            ["$enemy_dverger_mage"] = BiomeTier.Mistlands,
+            ["$enemy_dvergr_mage"] = BiomeTier.Mistlands,
+            ["$enemy_skeleton_summoned"] = BiomeTier.Mistlands, // Dead Raiser Skelett
 
-            // Ashlands (Putrid Holes & Fortresses)
+            // Ashlands
+            ["$enemy_fader"] = BiomeTier.Ashlands,
+            ["$enemy_charred_melee_Dyrnwyn"] = BiomeTier.Ashlands, // Lord Reto
             ["$enemy_morgen"] = BiomeTier.Ashlands,
             ["$enemy_charred_mage"] = BiomeTier.Ashlands,
+            ["$enemy_asksvin_hatchling"] = BiomeTier.Ashlands,
+            ["$enemy_charred_melee_Fader"] = BiomeTier.Ashlands,
+            ["$enemy_charred_twitcher_summoned"] = BiomeTier.Ashlands,
+            ["$enemy_summonedtroll"] = BiomeTier.Ashlands,
+
+            // Deep North
+            ["$enemy_frozenking"] = BiomeTier.DeepNorth, // Kall Fimbulbringer
+            ["$enemy_frozenking_p3"] = BiomeTier.DeepNorth,
+            ["$enemy_aspect_eikthyr"] = BiomeTier.DeepNorth,
+            ["$enemy_aspect_gdking"] = BiomeTier.DeepNorth,
+            ["$enemy_aspect_bonemass"] = BiomeTier.DeepNorth,
+            ["$enemy_aspect_dragon"] = BiomeTier.DeepNorth,
+            ["$enemy_aspect_goblinking"] = BiomeTier.DeepNorth,
+            ["$enemy_aspect_seekerqueen"] = BiomeTier.DeepNorth,
+            ["$enemy_aspect_fader"] = BiomeTier.DeepNorth,
+            ["$enemy_trollfrost"] = BiomeTier.DeepNorth, // Gammeltroll
+            ["$enemy_jotun_warrior"] = BiomeTier.DeepNorth, // Krigen
+            ["$enemy_jotun_witch"] = BiomeTier.DeepNorth, // Hexen
+            ["$enemy_elakingmole"] = BiomeTier.DeepNorth, // Eyeless One
+            ["$enemy_fallenwarrior"] = BiomeTier.DeepNorth,
+            ["$enemy_blobfrost"] = BiomeTier.DeepNorth,
+            ["$enemy_blobmork"] = BiomeTier.DeepNorth, // Shapeless Pulp
+            ["$enemy_blobmorkmini"] = BiomeTier.DeepNorth, // Tiny Pulp
+            ["$enemy_goblin_deepnorth"] = BiomeTier.DeepNorth, // Captive Fuling
+            ["$enemy_dvergr_deepnorth"] = BiomeTier.DeepNorth, // Imprisoned Dvergr
+            ["$enemy_moosecalf"] = BiomeTier.DeepNorth,
+            ["$spiritcaller_boar"] = BiomeTier.DeepNorth,
+            ["$spiritcaller_bjorn"] = BiomeTier.DeepNorth,
+            ["$spiritcaller_wolf"] = BiomeTier.DeepNorth,
+            ["$spiritcaller_moose"] = BiomeTier.DeepNorth,
         };
 
     // Base materials mapped by prefab name (case-insensitive; take precedence over mob-derived drops)
