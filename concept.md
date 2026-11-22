@@ -36,4 +36,5 @@
 - **Not-Eaten Indicator:** On every consumable item tooltip, show whether the item has not been eaten for the achievement (`AllFoodEaten`) yet.
 
 ## 5. Building
-- **Built Status Icon:** Display an icon in the corner of each building piece (or another appropriate place) indicating whether it has been built.
+- **Unbuilt Piece Indicator:** Display a corner badge on building pieces in the build menu that belong to `AllBuildPieces` and have not been built yet, and append `Not built for achievement` to the piece description.
+- **Not-Built Filter:** Add a `Not Built (N)` toggle button to the build menu (for piece tables with achievement targets, such as the Hammer) showing the count of missing pieces. When enabled, filters the build grid to only unbuilt achievement pieces, refreshes immediately after placing a piece, stays active across build menu closes while holding the tool, and resets when unequipping the tool.

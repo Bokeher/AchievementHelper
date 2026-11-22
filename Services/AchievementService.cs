@@ -752,6 +752,14 @@ public static class AchievementService
         return GetEffectiveDictStat((int)DifficultyRequirement.Any, s => s.m_piecesPlacedStats, pieceName) >= 1f;
     }
 
+    public static bool IsPieceMissingForAchievement(Piece? piece)
+    {
+        return piece != null &&
+               !string.IsNullOrEmpty(piece.m_name) &&
+               IsBuildPieceTarget(piece.m_name) &&
+               !HasBuiltPiece(piece.m_name);
+    }
+
     public static bool HasKilledEnemy(string enemyName)
     {
         DifficultyRequirement currentDiff = Achievements.GetCurrentAchievementDifficulty();
