@@ -29,6 +29,7 @@ public class Plugin : BaseUnityPlugin
     // 3 - Achievements Tab
     internal static ConfigEntry<bool> OnlyHideSpoilerAchievements = null!;
     internal static ConfigEntry<bool> ShowCompletionPercentages = null!;
+    internal static ConfigEntry<bool> GroupDetailsByBiome = null!;
 
     // 4 - Item Tooltips
     internal static ConfigEntry<bool> ShowNotCraftedTooltip = null!;
@@ -98,6 +99,11 @@ public class Plugin : BaseUnityPlugin
             "Show Progress Percentage",
             true,
             "Show completion percentage (%) centered on locked achievement tiles.");
+        GroupDetailsByBiome = Config.Bind(
+            "3 - Achievements Tab",
+            "Group Details By Biome",
+            true,
+            "Group achievement item lists by biome progression based on base recipe materials.");
 
         // [4 - Item Tooltips]
         ShowNotCraftedTooltip = Config.Bind(

@@ -172,6 +172,7 @@ public static class AchievementService
     public static void OnAchievementsInitialized()
     {
         EnsureRevealedLoaded();
+        BiomeClassifier.ResetCache();
         RebuildTriggerCaches();
         RefreshProgressScope(recheckUnlocks: true);
         DumpAllAchievements();

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using AchievementHelper.Services;
 using HarmonyLib;
 using TMPro;
@@ -78,9 +79,29 @@ internal static class AchievementsGuiPatches
             }
         }
 
+        bool groupCraftItemsByBiome = Plugin.GroupDetailsByBiome.Value &&
+                                      (achievement.m_id == "AllItemCraft" || achievement.m_id == "AllWeaponCraft");
+
         __instance.StartCoroutine(PopulateEnemyStatsEffective(__instance, achievement, diffIndex));
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_foodEatenTriggers, diffIndex, s => s.m_foodEatenStats));
-        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemCraftTriggers, diffIndex, s => s.m_itemCraftStats));
+
+        if (groupCraftItemsByBiome)
+        {
+            BiomeClassifier.LogUncategorizedMaterialsForItems(achievement.m_id, achievement.m_itemCraftTriggers.Select(t => t.m_stat));
+            IEnumerable<GroupedStatEntry> craftEntries = achievement.m_itemCraftTriggers.Select(req =>
+                new GroupedStatEntry(
+                    req.m_stat,
+                    AchievementService.GetEffectiveDictStat(diffIndex, s => s.m_itemCraftStats, req.m_stat),
+                    req.m_amount,
+                    AchievementService.FormatStatName(req.m_stat),
+                    BiomeClassifier.GetItemBiome(req.m_stat)));
+            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, craftEntries));
+        }
+        else
+        {
+            __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemCraftTriggers, diffIndex, s => s.m_itemCraftStats));
+        }
+
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemPickupTriggers, diffIndex, s => s.m_itemPickupStats));
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownCommandsTriggers, diffIndex, s => s.m_knownCommands));
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldKeysTriggers, diffIndex, s => s.m_knownWorldKeys));
@@ -130,6 +151,107 @@ internal static class AchievementsGuiPatches
                 count = 0;
             }
         }
+    }
+
+    private readonly struct GroupedStatEntry
+    {
+        public readonly string StatKey;
+        public readonly float Current;
+        public readonly float Target;
+        public readonly string DisplayName;
+        public readonly BiomeTier Biome;
+
+        public GroupedStatEntry(string statKey, float current, float target, string displayName, BiomeTier biome)
+        {
+            StatKey = statKey;
+            Current = current;
+            Target = target;
+            DisplayName = displayName;
+            Biome = biome;
+        }
+    }
+
+    private static IEnumerator PopulateGroupedEntriesEffective(
+        AchievementsGui gui,
+        Achievement achievement,
+        IEnumerable<GroupedStatEntry> sourceEntries)
+    {
+        AchievementDisplayMode mode = AchievementService.GetDisplayMode(achievement);
+        bool allRevealed = mode == AchievementDisplayMode.All || AchievementService.IsRevealed(achievement);
+
+        var groups = sourceEntries
+            .GroupBy(entry => entry.Biome)
+            .OrderBy(g => (int)g.Key)
+            .ToList();
+
+        int count = 0;
+        foreach (var group in groups)
+        {
+            List<GroupedStatEntry> entries = group.ToList();
+            int completedInGroup = 0;
+            bool anyVisibleInGroup = allRevealed;
+
+            foreach (GroupedStatEntry entry in entries)
+            {
+                if (entry.Current >= entry.Target)
+                {
+                    completedInGroup++;
+                    anyVisibleInGroup = true;
+                }
+                else if (!anyVisibleInGroup && AchievementService.IsStatRevealed(achievement, entry.StatKey))
+                {
+                    anyVisibleInGroup = true;
+                }
+            }
+
+            entries.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase));
+
+            string headerLabel = anyVisibleInGroup || group.Key == BiomeTier.Uncategorized
+                ? group.Key.GetDisplayName()
+                : "???";
+
+            CreateBiomeHeaderRow(gui, headerLabel, completedInGroup, entries.Count);
+            count++;
+            if (count >= gui.m_detailStatsPerFrame)
+            {
+                yield return null;
+                count = 0;
+            }
+
+            foreach (GroupedStatEntry entry in entries)
+            {
+                gui.CreateStatRow(entry.StatKey, entry.Current, entry.Target);
+                count++;
+                if (count >= gui.m_detailStatsPerFrame)
+                {
+                    yield return null;
+                    count = 0;
+                }
+            }
+        }
+    }
+
+    private static void CreateBiomeHeaderRow(AchievementsGui gui, string biomeName, int completed, int total)
+    {
+        AchievementDetailUnlockCondition row = UnityEngine.Object.Instantiate(
+            gui.m_achievementDetailsElementPrefab,
+            gui.m_achievementDetailsListRoot);
+        row.gameObject.SetActive(true);
+
+        Image bg = row.gameObject.GetComponent<Image>() ?? row.gameObject.AddComponent<Image>();
+        bg.color = new Color(0f, 0f, 0f, 0.45f);
+        bg.raycastTarget = false;
+
+        Color headerColor = completed >= total && total > 0
+            ? CompletedColor
+            : new Color(1f, 0.85f, 0.35f, 1f);
+
+        row.StatName.fontStyle = FontStyles.Bold;
+        row.Progress.fontStyle = FontStyles.Bold;
+        row.StatName.color = headerColor;
+        row.Progress.color = headerColor;
+        row.StatName.text = $"— {biomeName} —";
+        row.Progress.text = $"{completed} / {total}";
     }
 
     [HarmonyPrefix]
