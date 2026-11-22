@@ -103,7 +103,7 @@ public class Plugin : BaseUnityPlugin
             "3 - Achievements Tab",
             "Group Details By Biome",
             true,
-            "Group achievement item lists by biome progression based on base recipe materials.");
+            "Group supported achievement detail lists (such as enemies and craftable items) by biome progression.");
 
         // [4 - Item Tooltips]
         ShowNotCraftedTooltip = Config.Bind(

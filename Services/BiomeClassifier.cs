@@ -1,12 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace AchievementHelper.Services;
 
 public static class BiomeClassifier
 {
-    // Base materials mapped by prefab name (case-insensitive)
+    // Manual enemy overrides by Character.m_name (e.g. dungeon-only or special enemies not in SpawnSystem)
+    private static readonly Dictionary<string, BiomeTier> EnemyBiomeOverrides =
+        new(StringComparer.Ordinal);
+
+    // Manual base material overrides by prefab name (case-insensitive; take precedence over mob-derived drops)
     private static readonly Dictionary<string, BiomeTier> BaseMaterialBiomes =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -50,19 +55,44 @@ public static class BiomeClassifier
             // 8. Deep North
         };
 
+    private static readonly Dictionary<string, BiomeTier> EnemyBiomeByName = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, BiomeTier> DerivedMaterialBiomes = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, Recipe> RecipeBySharedName = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, string> PrefabNameBySharedName = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, BiomeTier> ItemBiomeCache = new(StringComparer.Ordinal);
     private static readonly HashSet<string> LoggedSummaryKeys = new(StringComparer.OrdinalIgnoreCase);
+
+    private static bool _enemyIndexBuilt;
     private static bool _itemIndexBuilt;
 
     public static void ResetCache()
     {
+        EnemyBiomeByName.Clear();
+        DerivedMaterialBiomes.Clear();
         RecipeBySharedName.Clear();
         PrefabNameBySharedName.Clear();
         ItemBiomeCache.Clear();
         LoggedSummaryKeys.Clear();
+        _enemyIndexBuilt = false;
         _itemIndexBuilt = false;
+    }
+
+    public static BiomeTier GetEnemyBiome(string enemySharedName)
+    {
+        if (string.IsNullOrEmpty(enemySharedName))
+        {
+            return BiomeTier.Uncategorized;
+        }
+
+        if (EnemyBiomeOverrides.TryGetValue(enemySharedName, out BiomeTier overridden))
+        {
+            return overridden;
+        }
+
+        EnsureEnemyIndexBuilt();
+        return EnemyBiomeByName.TryGetValue(enemySharedName, out BiomeTier tier)
+            ? tier
+            : BiomeTier.Uncategorized;
     }
 
     public static BiomeTier GetItemBiome(string sharedName)
@@ -72,6 +102,7 @@ public static class BiomeClassifier
             return BiomeTier.Uncategorized;
         }
 
+        EnsureEnemyIndexBuilt();
         EnsureItemIndexBuilt();
 
         if (ItemBiomeCache.TryGetValue(sharedName, out BiomeTier cached))
@@ -88,6 +119,36 @@ public static class BiomeClassifier
         return result;
     }
 
+    public static void LogUncategorizedEnemies(string logKey, IEnumerable<string> enemyNames)
+    {
+        if (!LoggedSummaryKeys.Add("enemies:" + logKey))
+        {
+            return;
+        }
+
+        EnsureEnemyIndexBuilt();
+
+        List<string> uncategorized = new();
+        foreach (string enemyName in enemyNames)
+        {
+            if (GetEnemyBiome(enemyName) == BiomeTier.Uncategorized)
+            {
+                string display = AchievementService.FormatStatName(enemyName);
+                uncategorized.Add($"{display} ({enemyName})");
+            }
+        }
+
+        if (uncategorized.Count == 0)
+        {
+            Plugin.Log.LogInfo($"[BiomeClassifier] {logKey}: all enemies categorized.");
+            return;
+        }
+
+        uncategorized.Sort(StringComparer.OrdinalIgnoreCase);
+        Plugin.Log.LogInfo(
+            $"[BiomeClassifier] {logKey}: {uncategorized.Count} uncategorized enemies: {string.Join(", ", uncategorized)}");
+    }
+
     public static void LogUncategorizedMaterialsForItems(string logKey, IEnumerable<string> sharedNames)
     {
         if (!LoggedSummaryKeys.Add("items:" + logKey))
@@ -95,6 +156,7 @@ public static class BiomeClassifier
             return;
         }
 
+        EnsureEnemyIndexBuilt();
         EnsureItemIndexBuilt();
 
         Dictionary<string, int> unknownCounts = new(StringComparer.OrdinalIgnoreCase);
@@ -114,7 +176,7 @@ public static class BiomeClassifier
 
             foreach (string leaf in leafPrefabs)
             {
-                if (!BaseMaterialBiomes.ContainsKey(leaf))
+                if (!TryGetKnownMaterialBiome(leaf, out _))
                 {
                     unknownCounts.TryGetValue(leaf, out int c);
                     unknownCounts[leaf] = c + 1;
@@ -140,6 +202,16 @@ public static class BiomeClassifier
             $"[BiomeClassifier] {logKey}: {uncategorizedItems} uncategorized craft items. Top unknown base materials: {topUnknown}");
     }
 
+    private static bool TryGetKnownMaterialBiome(string prefabName, out BiomeTier tier)
+    {
+        if (BaseMaterialBiomes.TryGetValue(prefabName, out tier))
+        {
+            return true;
+        }
+
+        return DerivedMaterialBiomes.TryGetValue(prefabName, out tier);
+    }
+
     private static BiomeTier EvaluateLeafMaterials(HashSet<string> leafPrefabs)
     {
         if (leafPrefabs.Count == 0)
@@ -152,7 +224,7 @@ public static class BiomeClassifier
 
         foreach (string prefab in leafPrefabs)
         {
-            if (!BaseMaterialBiomes.TryGetValue(prefab, out BiomeTier tier))
+            if (!TryGetKnownMaterialBiome(prefab, out BiomeTier tier))
             {
                 return BiomeTier.Uncategorized;
             }
@@ -178,7 +250,7 @@ public static class BiomeClassifier
         }
 
         if (PrefabNameBySharedName.TryGetValue(sharedName, out string prefabName) &&
-            BaseMaterialBiomes.ContainsKey(prefabName))
+            TryGetKnownMaterialBiome(prefabName, out _))
         {
             leafPrefabs.Add(prefabName);
             return;
@@ -200,7 +272,7 @@ public static class BiomeClassifier
                 string? ingShared = req.m_resItem.m_itemData?.m_shared?.m_name;
                 addedAnyIngredient = true;
 
-                if (!string.IsNullOrEmpty(ingPrefab) && BaseMaterialBiomes.ContainsKey(ingPrefab))
+                if (!string.IsNullOrEmpty(ingPrefab) && TryGetKnownMaterialBiome(ingPrefab, out _))
                 {
                     leafPrefabs.Add(ingPrefab);
                 }
@@ -226,6 +298,188 @@ public static class BiomeClassifier
         }
     }
 
+    private static void EnsureEnemyIndexBuilt()
+    {
+        if (_enemyIndexBuilt)
+        {
+            return;
+        }
+
+        SpawnSystem? spawnSystem = ZoneSystem.instance != null && ZoneSystem.instance.m_zoneCtrlPrefab != null
+            ? ZoneSystem.instance.m_zoneCtrlPrefab.GetComponent<SpawnSystem>()
+            : null;
+
+        if (spawnSystem == null && SpawnSystem.m_instances != null && SpawnSystem.m_instances.Count > 0)
+        {
+            spawnSystem = SpawnSystem.m_instances[0];
+        }
+
+        if (spawnSystem == null)
+        {
+            return;
+        }
+
+        _enemyIndexBuilt = true;
+        ItemBiomeCache.Clear();
+
+        List<GameObject> spawnedPrefabs = new();
+
+        if (spawnSystem.m_spawnLists != null)
+        {
+            foreach (SpawnSystemList list in spawnSystem.m_spawnLists)
+            {
+                if (list == null || list.m_spawners == null) continue;
+                IndexSpawnerList(list.m_spawners, Heightmap.Biome.None, spawnedPrefabs);
+            }
+        }
+
+        if (AltBiomeList.m_altBiomes != null)
+        {
+            foreach (AltBiome altBiome in AltBiomeList.m_altBiomes)
+            {
+                if (altBiome == null || !altBiome.m_enabled || altBiome.m_spawn == null) continue;
+                IndexSpawnerList(altBiome.m_spawn, altBiome.m_biome, spawnedPrefabs);
+            }
+        }
+
+        // Apply manual overrides on top of SpawnSystem
+        foreach (KeyValuePair<string, BiomeTier> kvp in EnemyBiomeOverrides)
+        {
+            EnemyBiomeByName[kvp.Key] = kvp.Value;
+        }
+
+        // Propagate classified enemy biomes to their CharacterDrop items (lowest biome wins)
+        HashSet<GameObject> processedPrefabs = new();
+        foreach (GameObject prefab in spawnedPrefabs)
+        {
+            if (prefab != null && processedPrefabs.Add(prefab))
+            {
+                DeriveDropsFromCharacterPrefab(prefab);
+            }
+        }
+
+        if (ZNetScene.instance != null && ZNetScene.instance.m_prefabs != null)
+        {
+            foreach (GameObject prefab in ZNetScene.instance.m_prefabs)
+            {
+                if (prefab != null && processedPrefabs.Add(prefab))
+                {
+                    DeriveDropsFromCharacterPrefab(prefab);
+                }
+            }
+        }
+
+        Plugin.Log.LogInfo(
+            $"[BiomeClassifier] Indexed {EnemyBiomeByName.Count} enemies from SpawnSystem and derived {DerivedMaterialBiomes.Count} material biomes from mob drops.");
+    }
+
+    private static void IndexSpawnerList(
+        List<SpawnSystem.SpawnData> spawners,
+        Heightmap.Biome fallbackBiomeMask,
+        List<GameObject> spawnedPrefabs)
+    {
+        foreach (SpawnSystem.SpawnData spawnData in spawners)
+        {
+            if (spawnData == null || !spawnData.m_enabled || spawnData.m_devDisabled || spawnData.m_prefab == null)
+            {
+                continue;
+            }
+
+            // Skip global-key and persistent-event spawners (e.g. post-boss night spawns of Fulings/Seekers/Charred in Meadows)
+            if (!string.IsNullOrEmpty(spawnData.m_requiredGlobalKey) ||
+                !string.IsNullOrEmpty(spawnData.m_requiredPersistentEvent))
+            {
+                continue;
+            }
+
+            Character character = spawnData.m_prefab.GetComponent<Character>();
+            if (character == null || string.IsNullOrEmpty(character.m_name))
+            {
+                continue;
+            }
+
+            Heightmap.Biome effectiveMask = spawnData.m_biome;
+            if (fallbackBiomeMask != Heightmap.Biome.None)
+            {
+                Heightmap.Biome intersection = effectiveMask & fallbackBiomeMask;
+                effectiveMask = intersection != Heightmap.Biome.None ? intersection : fallbackBiomeMask;
+            }
+
+            BiomeTier tier = MapLowestBiome(effectiveMask);
+            if (tier == BiomeTier.Uncategorized)
+            {
+                continue;
+            }
+
+            spawnedPrefabs.Add(spawnData.m_prefab);
+
+            if (!EnemyBiomeByName.TryGetValue(character.m_name, out BiomeTier existing) || tier < existing)
+            {
+                EnemyBiomeByName[character.m_name] = tier;
+            }
+        }
+    }
+
+    private static void DeriveDropsFromCharacterPrefab(GameObject prefab)
+    {
+        Character character = prefab.GetComponent<Character>();
+        if (character == null || string.IsNullOrEmpty(character.m_name))
+        {
+            return;
+        }
+
+        if (!EnemyBiomeByName.TryGetValue(character.m_name, out BiomeTier enemyTier) ||
+            enemyTier == BiomeTier.Uncategorized)
+        {
+            return;
+        }
+
+        CharacterDrop charDrop = prefab.GetComponent<CharacterDrop>();
+        if (charDrop == null || charDrop.m_drops == null)
+        {
+            return;
+        }
+
+        foreach (CharacterDrop.Drop drop in charDrop.m_drops)
+        {
+            if (drop == null || drop.m_prefab == null || drop.m_chance <= 0f || drop.m_amountMax <= 0)
+            {
+                continue;
+            }
+
+            ItemDrop itemDrop = drop.m_prefab.GetComponent<ItemDrop>();
+            if (itemDrop == null)
+            {
+                continue;
+            }
+
+            string dropPrefabName = Utils.GetPrefabName(drop.m_prefab);
+            if (string.IsNullOrEmpty(dropPrefabName))
+            {
+                continue;
+            }
+
+            if (!DerivedMaterialBiomes.TryGetValue(dropPrefabName, out BiomeTier existing) || enemyTier < existing)
+            {
+                DerivedMaterialBiomes[dropPrefabName] = enemyTier;
+            }
+        }
+    }
+
+    private static BiomeTier MapLowestBiome(Heightmap.Biome mask)
+    {
+        if ((mask & Heightmap.Biome.Meadows) != 0) return BiomeTier.Meadows;
+        if ((mask & Heightmap.Biome.BlackForest) != 0) return BiomeTier.BlackForest;
+        if ((mask & Heightmap.Biome.Ocean) != 0) return BiomeTier.Ocean;
+        if ((mask & Heightmap.Biome.Swamp) != 0) return BiomeTier.Swamp;
+        if ((mask & Heightmap.Biome.Mountain) != 0) return BiomeTier.Mountain;
+        if ((mask & Heightmap.Biome.Plains) != 0) return BiomeTier.Plains;
+        if ((mask & Heightmap.Biome.Mistlands) != 0) return BiomeTier.Mistlands;
+        if ((mask & Heightmap.Biome.AshLands) != 0) return BiomeTier.Ashlands;
+        if ((mask & Heightmap.Biome.DeepNorth) != 0) return BiomeTier.DeepNorth;
+        return BiomeTier.Uncategorized;
+    }
+
     private static void EnsureItemIndexBuilt()
     {
         if (_itemIndexBuilt || ObjectDB.instance == null)
@@ -235,7 +489,7 @@ public static class BiomeClassifier
 
         _itemIndexBuilt = true;
 
-        foreach (UnityEngine.GameObject itemObj in ObjectDB.instance.m_items)
+        foreach (GameObject itemObj in ObjectDB.instance.m_items)
         {
             if (itemObj == null) continue;
             ItemDrop drop = itemObj.GetComponent<ItemDrop>();

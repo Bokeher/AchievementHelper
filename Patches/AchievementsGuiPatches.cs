@@ -79,10 +79,28 @@ internal static class AchievementsGuiPatches
             }
         }
 
+        bool groupEnemiesByBiome = Plugin.GroupDetailsByBiome.Value &&
+                                   (achievement.m_id == "KillAllCreatures" || achievement.m_id == "KillAllCreaturesHard");
         bool groupCraftItemsByBiome = Plugin.GroupDetailsByBiome.Value &&
                                       (achievement.m_id == "AllItemCraft" || achievement.m_id == "AllWeaponCraft");
 
-        __instance.StartCoroutine(PopulateEnemyStatsEffective(__instance, achievement, diffIndex));
+        if (groupEnemiesByBiome)
+        {
+            BiomeClassifier.LogUncategorizedEnemies(achievement.m_id, achievement.m_enemyStatsTriggers.Select(t => t.m_stat));
+            IEnumerable<GroupedStatEntry> enemyEntries = achievement.m_enemyStatsTriggers.Select(req =>
+                new GroupedStatEntry(
+                    req.m_stat,
+                    AchievementService.GetEffectiveEnemyStat(diffIndex, req.m_modifier, req.m_stat),
+                    req.m_amount,
+                    AchievementService.FormatStatName(req.m_stat),
+                    BiomeClassifier.GetEnemyBiome(req.m_stat)));
+            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, enemyEntries));
+        }
+        else
+        {
+            __instance.StartCoroutine(PopulateEnemyStatsEffective(__instance, achievement, diffIndex));
+        }
+
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_foodEatenTriggers, diffIndex, s => s.m_foodEatenStats));
 
         if (groupCraftItemsByBiome)

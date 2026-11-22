@@ -4,12 +4,13 @@ public enum BiomeTier
 {
     Meadows = 0,
     BlackForest = 1,
-    Swamp = 2,
-    Mountain = 3,
-    Plains = 4,
-    Mistlands = 5,
-    Ashlands = 6,
-    DeepNorth = 7,
+    Ocean = 2,
+    Swamp = 3,
+    Mountain = 4,
+    Plains = 5,
+    Mistlands = 6,
+    Ashlands = 7,
+    DeepNorth = 8,
     Uncategorized = 99
 }
 
@@ -21,6 +22,7 @@ public static class BiomeTierExtensions
         {
             BiomeTier.Meadows => "Meadows",
             BiomeTier.BlackForest => "Black Forest",
+            BiomeTier.Ocean => "Ocean",
             BiomeTier.Swamp => "Swamp",
             BiomeTier.Mountain => "Mountain",
             BiomeTier.Plains => "Plains",
