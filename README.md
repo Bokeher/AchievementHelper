@@ -18,3 +18,9 @@ dotnet build -p:CopyToPlugins=true
 ```
 
 Or run `run-valheim.cmd` to build, copy the plugin to `BepInEx\plugins\AchievementHelper\`, and launch Valheim via Steam.
+
+## Credits
+
+- `crossed-swords` icon by [Lorc](https://game-icons.net/1x1/lorc/crossed-swords.html) (CC BY 3.0)
+- `trophy-cup` icon by [Delapouite](https://game-icons.net/1x1/delapouite/trophy-cup.html) (CC BY 3.0)
+

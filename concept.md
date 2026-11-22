@@ -10,8 +10,8 @@
 - **Feature Toggles (Config):** Individual mod features (tooltips, filters, enemy indicators, building icons, only hide spoiler achievements) are configurable via BepInEx config.
 
 ## 1. Enemies
-- **Undefeated Indicator:** If an enemy has never been killed, display an icon next to its stars (or where stars would appear) or on the opposite side of the health bar indicating that it has not been defeated yet.
-- **Missing Trophy Indicator:** If an enemy has not dropped its trophy yet, display a trophy icon.
+- **Undefeated Indicator:** If a non-boss, non-tamed enemy belongs to `KillAllCreatures` / `KillAllCreaturesHard` and has never been killed, display a crossed-swords icon to the right of its health bar.
+- **Missing Trophy Indicator:** If a non-boss, non-tamed enemy drops a trophy belonging to `FindAllTrophies` that has not been collected yet, display a trophy cup icon next to the health bar.
 
 ## 2. Achievements Tab
 - **Only Hide Spoiler Achievements:** Keep boss-defeat and spoiler achievements (`hidden`) concealed, while showing non-spoiler concealed achievements (e.g., "Get killed by all types of trees").

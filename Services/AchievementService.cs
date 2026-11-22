@@ -167,6 +167,7 @@ public static class AchievementService
     private static readonly HashSet<string> EnemyTargets = new();
     private static readonly HashSet<string> TrophyTargets = new();
     private static readonly Dictionary<string, string> RawToCookedMap = new();
+    private static readonly Dictionary<string, string> CharacterTrophyMap = new();
 
     public static void OnAchievementsInitialized()
     {
@@ -774,6 +775,71 @@ public static class AchievementService
         return GetEffectiveDictStat((int)DifficultyRequirement.Any, s => s.m_itemPickupStats, trophySharedName) >= 1f;
     }
 
+    public static bool IsEnemyMissingForAchievement(Character? character)
+    {
+        return character != null &&
+               !character.IsPlayer() &&
+               !character.IsBoss() &&
+               !character.IsTamed() &&
+               !string.IsNullOrEmpty(character.m_name) &&
+               IsEnemyTarget(character.m_name) &&
+               !HasKilledEnemy(character.m_name);
+    }
+
+    public static bool IsEnemyMissingTrophyForAchievement(Character? character)
+    {
+        if (character == null || character.IsPlayer() || character.IsBoss() || character.IsTamed())
+        {
+            return false;
+        }
+
+        return TryGetCharacterTrophy(character, out string trophySharedName) &&
+               IsTrophyTarget(trophySharedName) &&
+               !HasPickedUpTrophy(trophySharedName);
+    }
+
+    public static bool TryGetCharacterTrophy(Character character, out string trophySharedName)
+    {
+        trophySharedName = string.Empty;
+        if (character == null || string.IsNullOrEmpty(character.m_name))
+        {
+            return false;
+        }
+
+        if (CharacterTrophyMap.TryGetValue(character.m_name, out string cached))
+        {
+            trophySharedName = cached;
+            return !string.IsNullOrEmpty(cached);
+        }
+
+        string found = FindTrophyDropName(character.GetComponent<CharacterDrop>());
+        CharacterTrophyMap[character.m_name] = found;
+        trophySharedName = found;
+        return !string.IsNullOrEmpty(found);
+    }
+
+    private static string FindTrophyDropName(CharacterDrop? dropComponent)
+    {
+        if (dropComponent == null || dropComponent.m_drops == null)
+        {
+            return string.Empty;
+        }
+
+        foreach (CharacterDrop.Drop drop in dropComponent.m_drops)
+        {
+            ItemDrop? itemDrop = drop.m_prefab != null ? drop.m_prefab.GetComponent<ItemDrop>() : null;
+            ItemDrop.ItemData.SharedData? shared = itemDrop?.m_itemData?.m_shared;
+            if (shared != null &&
+                shared.m_itemType == ItemDrop.ItemData.ItemType.Trophy &&
+                !string.IsNullOrEmpty(shared.m_name))
+            {
+                return shared.m_name;
+            }
+        }
+
+        return string.Empty;
+    }
+
     private static bool IncludeCurrentProfileInScope(PlayerProfile current)
     {
         if (Plugin.ProgressScopeConfig.Value != ProgressScope.Global)
@@ -1064,12 +1130,24 @@ public static class AchievementService
         EnemyTargets.Clear();
         TrophyTargets.Clear();
         RawToCookedMap.Clear();
+        CharacterTrophyMap.Clear();
 
         if (ZNetScene.instance != null)
         {
             foreach (GameObject prefab in ZNetScene.instance.m_prefabs)
             {
                 if (prefab == null) continue;
+
+                Character character = prefab.GetComponent<Character>();
+                if (character != null && !string.IsNullOrEmpty(character.m_name) && !CharacterTrophyMap.ContainsKey(character.m_name))
+                {
+                    string trophyName = FindTrophyDropName(prefab.GetComponent<CharacterDrop>());
+                    if (!string.IsNullOrEmpty(trophyName))
+                    {
+                        CharacterTrophyMap[character.m_name] = trophyName;
+                    }
+                }
+
                 CookingStation station = prefab.GetComponent<CookingStation>();
                 if (station == null) continue;
 
