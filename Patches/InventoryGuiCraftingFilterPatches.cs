@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using AchievementHelper.Services;
+using AchievementHelper.UI;
 using HarmonyLib;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,10 +12,7 @@ internal static class InventoryGuiCraftingFilterPatches
 {
     private const string FilterButtonName = "AchievementHelper_CraftFilterButton";
 
-    private static readonly Color ActiveTextColor = new(1f, 0.85f, 0.35f, 1f);
-    private static readonly Color InactiveTextColor = new(0.9f, 0.9f, 0.9f, 1f);
-
-    private static Button? _filterButton;
+    private static FilterToggleButton? _filterButton;
     private static bool _filterActive;
 
     [HarmonyPostfix]
@@ -48,10 +45,7 @@ internal static class InventoryGuiCraftingFilterPatches
     {
         if (!Plugin.ModEnabled.Value || !Plugin.ShowCraftingFilter.Value || !__instance.InCraftTab())
         {
-            if (_filterButton != null)
-            {
-                _filterButton.gameObject.SetActive(false);
-            }
+            _filterButton?.SetVisible(false);
             return;
         }
 
@@ -92,36 +86,20 @@ internal static class InventoryGuiCraftingFilterPatches
 
     private static void UpdateFilterButton(InventoryGui gui, bool isCookingMode, int missingCount)
     {
-        Button? button = EnsureFilterButton(gui);
+        FilterToggleButton? button = EnsureFilterButton(gui);
         if (button == null)
         {
             return;
         }
 
-        button.gameObject.SetActive(true);
-        button.transform.SetAsLastSibling();
-
-        TMP_Text? label = button.GetComponentInChildren<TMP_Text>(true);
-        if (label != null)
-        {
-            string baseText = isCookingMode ? "Not Cooked" : "Not Crafted";
-            label.text = _filterActive
-                ? $"[✓] {baseText} ({missingCount})"
-                : $"{baseText} ({missingCount})";
-            label.color = _filterActive ? ActiveTextColor : InactiveTextColor;
-        }
-
-        button.onClick = new Button.ButtonClickedEvent();
-        button.onClick.AddListener(() =>
-        {
-            _filterActive = !_filterActive;
-            gui.UpdateCraftingPanel(false);
-        });
+        string baseText = isCookingMode ? "Not Cooked" : "Not Crafted";
+        button.SetVisible(true);
+        button.SetState($"{baseText} ({missingCount})", _filterActive);
     }
 
-    private static Button? EnsureFilterButton(InventoryGui gui)
+    private static FilterToggleButton? EnsureFilterButton(InventoryGui gui)
     {
-        if (_filterButton != null)
+        if (_filterButton != null && _filterButton.IsAlive)
         {
             return _filterButton;
         }
@@ -131,61 +109,21 @@ internal static class InventoryGuiCraftingFilterPatches
             return null;
         }
 
-        Transform? existing = gui.m_crafting.Find(FilterButtonName);
-        if (existing != null)
-        {
-            _filterButton = existing.GetComponent<Button>();
-            return _filterButton;
-        }
-
         Button? template = gui.m_craftButton != null ? gui.m_craftButton : gui.m_tabUpgrade;
-        if (template == null)
-        {
-            Plugin.Log.LogWarning("Could not find template button for crafting filter.");
-            return null;
-        }
-
-        GameObject clone = UnityEngine.Object.Instantiate(template.gameObject, gui.m_crafting);
-        clone.name = FilterButtonName;
-        clone.SetActive(true);
-        clone.transform.SetAsLastSibling();
-
-        // Remove any gamepad hint children cloned from m_craftButton
-        for (int i = clone.transform.childCount - 1; i >= 0; i--)
-        {
-            Transform child = clone.transform.GetChild(i);
-            if (child.GetComponent<TMP_Text>() == null)
+        _filterButton = FilterToggleButton.CreateOrAttach(
+            gui.m_crafting,
+            FilterButtonName,
+            template,
+            anchor: new Vector2(0f, 0f),
+            pivot: new Vector2(0f, 1f),
+            anchoredPosition: new Vector2(6f, -6f),
+            size: new Vector2(185f, 32f),
+            onClick: () =>
             {
-                UnityEngine.Object.Destroy(child.gameObject);
-            }
-        }
+                _filterActive = !_filterActive;
+                gui.UpdateCraftingPanel(false);
+            });
 
-        LayoutElement layoutElement = clone.GetComponent<LayoutElement>() ?? clone.AddComponent<LayoutElement>();
-        layoutElement.ignoreLayout = true;
-
-        Button button = clone.GetComponent<Button>();
-        button.interactable = true;
-        button.onClick = new Button.ButtonClickedEvent();
-
-        if (clone.transform is RectTransform rt)
-        {
-            rt.anchorMin = new Vector2(0f, 0f);
-            rt.anchorMax = new Vector2(0f, 0f);
-            rt.pivot = new Vector2(0f, 1f);
-            rt.sizeDelta = new Vector2(185f, 32f);
-            rt.anchoredPosition = new Vector2(6f, -6f);
-        }
-
-        TMP_Text? label = clone.GetComponentInChildren<TMP_Text>(true);
-        if (label != null)
-        {
-            label.fontSize = 15f;
-            label.alignment = TextAlignmentOptions.Center;
-            label.textWrappingMode = TextWrappingModes.NoWrap;
-            label.text = "Not Crafted (0)";
-        }
-
-        _filterButton = button;
         return _filterButton;
     }
 }
