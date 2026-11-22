@@ -7,52 +7,231 @@ namespace AchievementHelper.Services;
 
 public static class BiomeClassifier
 {
-    // Manual enemy overrides by Character.m_name (e.g. dungeon-only or special enemies not in SpawnSystem)
+    // Manual enemy overrides by Character.m_name (dungeon-only or special enemies not in SpawnSystem)
     private static readonly Dictionary<string, BiomeTier> EnemyBiomeOverrides =
-        new(StringComparer.Ordinal);
+        new(StringComparer.Ordinal)
+        {
+            // Black Forest (Burial Chambers)
+            ["$enemy_ghost"] = BiomeTier.BlackForest,
+            ["$enemy_skeleton_poison"] = BiomeTier.BlackForest,
 
-    // Manual base material overrides by prefab name (case-insensitive; take precedence over mob-derived drops)
+            // Mountain (Frost Caves)
+            ["$enemy_bat"] = BiomeTier.Mountain,
+            ["$enemy_ulv"] = BiomeTier.Mountain,
+            ["$enemy_fenringcultist"] = BiomeTier.Mountain,
+
+            // Mistlands (Infested Mines & Dvergr structures)
+            ["$enemy_tick"] = BiomeTier.Mistlands,
+            ["$enemy_seeker_brood"] = BiomeTier.Mistlands,
+            ["$enemy_dverger"] = BiomeTier.Mistlands,
+            ["$enemy_dverger_mage"] = BiomeTier.Mistlands,
+
+            // Ashlands (Putrid Holes & Fortresses)
+            ["$enemy_morgen"] = BiomeTier.Ashlands,
+            ["$enemy_charred_mage"] = BiomeTier.Ashlands,
+        };
+
+    // Base materials mapped by prefab name (case-insensitive; take precedence over mob-derived drops)
     private static readonly Dictionary<string, BiomeTier> BaseMaterialBiomes =
         new(StringComparer.OrdinalIgnoreCase)
         {
             // 1. Meadows
-            ["Stone"] = BiomeTier.Meadows,
             ["Wood"] = BiomeTier.Meadows,
-            ["Resin"] = BiomeTier.Meadows,
+            ["FineWood"] = BiomeTier.Meadows,
+            ["Stone"] = BiomeTier.Meadows,
             ["Flint"] = BiomeTier.Meadows,
+            ["Resin"] = BiomeTier.Meadows,
+            ["Feathers"] = BiomeTier.Meadows,
+            ["HardAntler"] = BiomeTier.Meadows,
+            ["LeatherScraps"] = BiomeTier.Meadows,
+            ["DeerHide"] = BiomeTier.Meadows,
+            ["RawMeat"] = BiomeTier.Meadows,
+            ["NeckTail"] = BiomeTier.Meadows,
+            ["Raspberry"] = BiomeTier.Meadows,
+            ["Mushroom"] = BiomeTier.Meadows,
+            ["Dandelion"] = BiomeTier.Meadows,
+            ["Honey"] = BiomeTier.Meadows,
+            ["QueenBee"] = BiomeTier.Meadows,
+            ["BeechSeeds"] = BiomeTier.Meadows,
+            ["BirchSeeds"] = BiomeTier.Meadows,
+            ["Acorn"] = BiomeTier.Meadows,
 
             // 2. Black Forest
-            ["Bronze"] = BiomeTier.BlackForest,
+            ["RoundLog"] = BiomeTier.BlackForest,
+            ["CopperOre"] = BiomeTier.BlackForest,
             ["Copper"] = BiomeTier.BlackForest,
+            ["CopperScrap"] = BiomeTier.BlackForest,
+            ["TinOre"] = BiomeTier.BlackForest,
             ["Tin"] = BiomeTier.BlackForest,
-            ["BoneFragments"] = BiomeTier.BlackForest,
+            ["Bronze"] = BiomeTier.BlackForest,
+            ["BronzeNails"] = BiomeTier.BlackForest,
+            ["Coal"] = BiomeTier.BlackForest,
             ["SurtlingCore"] = BiomeTier.BlackForest,
+            ["BoneFragments"] = BiomeTier.BlackForest,
+            ["GreydwarfEye"] = BiomeTier.BlackForest,
             ["TrollHide"] = BiomeTier.BlackForest,
             ["BjornHide"] = BiomeTier.BlackForest,
             ["BearHide"] = BiomeTier.BlackForest,
+            ["Blueberries"] = BiomeTier.BlackForest,
+            ["Thistle"] = BiomeTier.BlackForest,
+            ["MushroomYellow"] = BiomeTier.BlackForest,
+            ["Carrot"] = BiomeTier.BlackForest,
+            ["CarrotSeeds"] = BiomeTier.BlackForest,
+            ["PineCone"] = BiomeTier.BlackForest,
+            ["FirCone"] = BiomeTier.BlackForest,
+            ["CryptKey"] = BiomeTier.BlackForest,
+            ["YmirRemains"] = BiomeTier.BlackForest,
+            ["Thunderstone"] = BiomeTier.BlackForest,
+            ["Coins"] = BiomeTier.BlackForest,
+            ["Amber"] = BiomeTier.BlackForest,
+            ["AmberPearl"] = BiomeTier.BlackForest,
+            ["Ruby"] = BiomeTier.BlackForest,
 
-            // 3. Swamp
+            // 3. Ocean
+            ["Chitin"] = BiomeTier.Ocean,
+            ["SerpentScale"] = BiomeTier.Ocean,
+            ["SerpentMeat"] = BiomeTier.Ocean,
+            ["SerpentMeatCooked"] = BiomeTier.Ocean,
+
+            // 4. Swamp
+            ["IronScrap"] = BiomeTier.Swamp,
             ["Iron"] = BiomeTier.Swamp,
-            ["WitheredBone"] = BiomeTier.Swamp,
+            ["IronNails"] = BiomeTier.Swamp,
             ["ElderBark"] = BiomeTier.Swamp,
+            ["WitheredBone"] = BiomeTier.Swamp,
+            ["Guck"] = BiomeTier.Swamp,
+            ["Chain"] = BiomeTier.Swamp,
+            ["Root"] = BiomeTier.Swamp,
+            ["Entrails"] = BiomeTier.Swamp,
+            ["Ooze"] = BiomeTier.Swamp,
+            ["Bloodbag"] = BiomeTier.Swamp,
+            ["Turnip"] = BiomeTier.Swamp,
+            ["TurnipSeeds"] = BiomeTier.Swamp,
+            ["Wishbone"] = BiomeTier.Swamp,
+            ["ScytheHandle"] = BiomeTier.Swamp,
 
-            // 4. Mountain
+            // 5. Mountain
+            ["SilverOre"] = BiomeTier.Mountain,
             ["Silver"] = BiomeTier.Mountain,
             ["Obsidian"] = BiomeTier.Mountain,
+            ["Crystal"] = BiomeTier.Mountain,
             ["FreezeGland"] = BiomeTier.Mountain,
+            ["WolfPelt"] = BiomeTier.Mountain,
+            ["WolfFang"] = BiomeTier.Mountain,
+            ["WolfMeat"] = BiomeTier.Mountain,
+            ["FenrisHair"] = BiomeTier.Mountain,
+            ["FenrisClaw"] = BiomeTier.Mountain,
+            ["JuteRed"] = BiomeTier.Mountain,
+            ["Onion"] = BiomeTier.Mountain,
+            ["OnionSeeds"] = BiomeTier.Mountain,
+            ["DragonEgg"] = BiomeTier.Mountain,
+            ["DragonTear"] = BiomeTier.Mountain,
 
-            // 5. Plains
+            // 6. Plains
+            ["BlackMetalScrap"] = BiomeTier.Plains,
             ["BlackMetal"] = BiomeTier.Plains,
+            ["Tar"] = BiomeTier.Plains,
+            ["Needle"] = BiomeTier.Plains,
+            ["LoxPelt"] = BiomeTier.Plains,
+            ["LoxMeat"] = BiomeTier.Plains,
             ["Flax"] = BiomeTier.Plains,
+            ["LinenThread"] = BiomeTier.Plains,
             ["Barley"] = BiomeTier.Plains,
+            ["BarleyFlour"] = BiomeTier.Plains,
+            ["Cloudberry"] = BiomeTier.Plains,
+            ["GoblinTotem"] = BiomeTier.Plains,
+            ["YagluthDrop"] = BiomeTier.Plains,
+            ["ChickenEgg"] = BiomeTier.Plains,
+            ["ChickenMeat"] = BiomeTier.Plains,
 
-            // 6. Mistlands
-            ["Eitr"] = BiomeTier.Mistlands,
+            // 7. Mistlands
+            ["YggdrasilWood"] = BiomeTier.Mistlands,
+            ["BlackMarble"] = BiomeTier.Mistlands,
+            ["Softtissue"] = BiomeTier.Mistlands,
             ["Sap"] = BiomeTier.Mistlands,
+            ["Eitr"] = BiomeTier.Mistlands,
+            ["Wisp"] = BiomeTier.Mistlands,
+            ["BlackCore"] = BiomeTier.Mistlands,
+            ["Carapace"] = BiomeTier.Mistlands,
+            ["Mandible"] = BiomeTier.Mistlands,
+            ["ScaleHide"] = BiomeTier.Mistlands,
+            ["BloodClot"] = BiomeTier.Mistlands,
+            ["Bilebag"] = BiomeTier.Mistlands,
+            ["RoyalJelly"] = BiomeTier.Mistlands,
+            ["JuteBlue"] = BiomeTier.Mistlands,
+            ["DvergrNeedle"] = BiomeTier.Mistlands,
+            ["DvergrKeyFragment"] = BiomeTier.Mistlands,
+            ["DvergrKey"] = BiomeTier.Mistlands,
+            ["MechanicalSpring"] = BiomeTier.Mistlands,
+            ["Lantern"] = BiomeTier.Mistlands,
+            ["QueenDrop"] = BiomeTier.Mistlands,
+            ["BugMeat"] = BiomeTier.Mistlands,
+            ["HareMeat"] = BiomeTier.Mistlands,
+            ["MushroomJotunPuffs"] = BiomeTier.Mistlands,
+            ["MushroomMagecap"] = BiomeTier.Mistlands,
 
-            // 7. Ashlands
+            // 8. Ashlands
+            ["Blackwood"] = BiomeTier.Ashlands,
+            ["Grausten"] = BiomeTier.Ashlands,
+            ["FlametalOreNew"] = BiomeTier.Ashlands,
+            ["FlametalNew"] = BiomeTier.Ashlands,
+            ["FlametalOre"] = BiomeTier.Ashlands,
+            ["Flametal"] = BiomeTier.Ashlands,
+            ["MoltenCore"] = BiomeTier.Ashlands,
+            ["BellFragment"] = BiomeTier.Ashlands,
+            ["Bell"] = BiomeTier.Ashlands,
+            ["ShieldCore"] = BiomeTier.Ashlands,
+            ["FaderDrop"] = BiomeTier.Ashlands,
+            ["GemstoneRed"] = BiomeTier.Ashlands,
+            ["GemstoneBlue"] = BiomeTier.Ashlands,
+            ["GemstoneGreen"] = BiomeTier.Ashlands,
+            ["SulfurStone"] = BiomeTier.Ashlands,
+            ["Sulfur"] = BiomeTier.Ashlands,
+            ["CharcoalResin"] = BiomeTier.Ashlands,
+            ["ProustitePowder"] = BiomeTier.Ashlands,
+            ["CharredBone"] = BiomeTier.Ashlands,
+            ["CharredCogwheel"] = BiomeTier.Ashlands,
+            ["AskHide"] = BiomeTier.Ashlands,
+            ["AskBladder"] = BiomeTier.Ashlands,
+            ["AsksvinNeck"] = BiomeTier.Ashlands,
+            ["AsksvinPelvis"] = BiomeTier.Ashlands,
+            ["AsksvinRibcage"] = BiomeTier.Ashlands,
+            ["AsksvinSkull"] = BiomeTier.Ashlands,
+            ["MorgenHeart"] = BiomeTier.Ashlands,
+            ["MorgenSinew"] = BiomeTier.Ashlands,
+            ["BonemawSerpentTooth"] = BiomeTier.Ashlands,
+            ["BonemawTooth"] = BiomeTier.Ashlands,
+            ["CelestialFeather"] = BiomeTier.Ashlands,
+            ["Fiddlehead"] = BiomeTier.Ashlands,
+            ["SmokePuff"] = BiomeTier.Ashlands,
+            ["Vineberry"] = BiomeTier.Ashlands,
+            ["VineberryCluster"] = BiomeTier.Ashlands,
+            ["VineberrySeeds"] = BiomeTier.Ashlands,
+            ["VoltureMeat"] = BiomeTier.Ashlands,
+            ["AsksvinMeat"] = BiomeTier.Ashlands,
+            ["BonemawSerpentMeat"] = BiomeTier.Ashlands,
+            ["DyrnwynBladeFragment"] = BiomeTier.Ashlands,
+            ["DyrnwynHiltFragment"] = BiomeTier.Ashlands,
+            ["DyrnwynTipFragment"] = BiomeTier.Ashlands,
 
-            // 8. Deep North
+            // 9. Deep North
+            ["Frostwood"] = BiomeTier.DeepNorth,
+            ["Ice"] = BiomeTier.DeepNorth,
+            ["LiquidFrost"] = BiomeTier.DeepNorth,
+            ["FrostCore"] = BiomeTier.DeepNorth,
+            ["GoldOre"] = BiomeTier.DeepNorth,
+            ["Gold"] = BiomeTier.DeepNorth,
+            ["AncientGemstoneOrange"] = BiomeTier.DeepNorth,
+            ["AncientGemstoneGreen"] = BiomeTier.DeepNorth,
+            ["AncientGemstonePurple"] = BiomeTier.DeepNorth,
+            ["AncientGemstoneBlack"] = BiomeTier.DeepNorth,
+            ["Lingonberry"] = BiomeTier.DeepNorth,
+            ["Kale"] = BiomeTier.DeepNorth,
+            ["KaleSeeds"] = BiomeTier.DeepNorth,
+            ["Snowball"] = BiomeTier.DeepNorth,
+            ["SealBlubber"] = BiomeTier.DeepNorth,
+            ["MooseHide"] = BiomeTier.DeepNorth,
+            ["MooseMeat"] = BiomeTier.DeepNorth,
         };
 
     private static readonly Dictionary<string, BiomeTier> EnemyBiomeByName = new(StringComparer.Ordinal);
