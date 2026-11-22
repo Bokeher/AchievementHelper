@@ -21,7 +21,7 @@ internal static class ItemTooltipPatches
         bool appending,
         ref string __result)
     {
-        if (appending || !Plugin.ModEnabled.Value || !Plugin.ShowItemTooltips.Value || Player.m_localPlayer == null || item?.m_shared == null)
+        if (appending || !Plugin.ModEnabled.Value || Player.m_localPlayer == null || item?.m_shared == null)
         {
             return;
         }
@@ -32,23 +32,30 @@ internal static class ItemTooltipPatches
             return;
         }
 
-        bool missingCook = AchievementService.IsFoodCookTarget(sharedName) &&
+        bool isCookTarget = AchievementService.IsFoodCookTarget(sharedName);
+        bool missingCook = Plugin.ShowNotCookedTooltip.Value &&
+                           isCookTarget &&
                            !AchievementService.HasCraftedItem(sharedName);
 
-        bool missingCraft = !missingCook &&
+        bool missingCraft = Plugin.ShowNotCraftedTooltip.Value &&
+                            !isCookTarget &&
                             AchievementService.IsItemCraftTarget(sharedName) &&
                             !AchievementService.HasCraftedItem(sharedName);
 
-        bool missingEat = AchievementService.IsFoodEatenTarget(sharedName) &&
+        bool missingEat = Plugin.ShowNotEatenTooltip.Value &&
+                          AchievementService.IsFoodEatenTarget(sharedName) &&
                           !AchievementService.HasEatenFood(sharedName);
 
         bool missingRoastedCook = false;
         bool missingRoastedEat = false;
-        if (AchievementService.TryGetCookedVariant(sharedName, out string cookedName))
+        if ((Plugin.ShowRawRoastedCookedTooltip.Value || Plugin.ShowRawRoastedEatenTooltip.Value) &&
+            AchievementService.TryGetCookedVariant(sharedName, out string cookedName))
         {
-            missingRoastedCook = AchievementService.IsFoodCookTarget(cookedName) &&
+            missingRoastedCook = Plugin.ShowRawRoastedCookedTooltip.Value &&
+                                 AchievementService.IsFoodCookTarget(cookedName) &&
                                  !AchievementService.HasCraftedItem(cookedName);
-            missingRoastedEat = AchievementService.IsFoodEatenTarget(cookedName) &&
+            missingRoastedEat = Plugin.ShowRawRoastedEatenTooltip.Value &&
+                                AchievementService.IsFoodEatenTarget(cookedName) &&
                                 !AchievementService.HasEatenFood(cookedName);
         }
 
@@ -76,12 +83,12 @@ internal static class ItemTooltipPatches
 
         if (missingRoastedCook)
         {
-            sb.Append("\n<color=#FFD166>Not cooked (roasted) for achievement</color>");
+            sb.Append("\n<color=#FFD166>Not cooked for achievement</color>");
         }
 
         if (missingRoastedEat)
         {
-            sb.Append("\n<color=#FF9F43>Roasted variant not eaten for achievement</color>");
+            sb.Append("\n<color=#FF9F43>Cooked variant not eaten for achievement</color>");
         }
 
         __result = sb.ToString();

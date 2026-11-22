@@ -112,7 +112,7 @@ internal static class InventoryGuiAchievementsPatches
                 nameText.text = Localization.instance.Localize(item.m_name);
                 descText.text = Localization.instance.Localize(item.m_description);
 
-                if (!item.m_unlocked && mode != AchievementDisplayMode.Simple && hasDetails)
+                if (Plugin.ShowCompletionPercentages.Value && !item.m_unlocked && mode != AchievementDisplayMode.Simple && hasDetails)
                 {
                     int pct = Mathf.FloorToInt(AchievementService.GetCompletionPercentage(item));
                     if (pct < 100)

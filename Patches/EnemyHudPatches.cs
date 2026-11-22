@@ -69,10 +69,14 @@ internal static class EnemyHudPatches
     private static void UpdateHudIndicators(EnemyHud.HudData hudData)
     {
         Character character = hudData.m_character;
-        bool featureEnabled = Plugin.ModEnabled.Value && Plugin.ShowEnemyIndicators.Value;
+        bool modEnabled = Plugin.ModEnabled.Value;
 
-        bool showUndefeated = featureEnabled && AchievementService.IsEnemyMissingForAchievement(character);
-        bool showTrophy = featureEnabled && AchievementService.IsEnemyMissingTrophyForAchievement(character);
+        bool showUndefeated = modEnabled &&
+                              Plugin.ShowUndefeatedEnemyIcon.Value &&
+                              AchievementService.IsEnemyMissingForAchievement(character);
+        bool showTrophy = modEnabled &&
+                          Plugin.ShowMissingTrophyIcon.Value &&
+                          AchievementService.IsEnemyMissingTrophyForAchievement(character);
 
         Transform? healthTransform = hudData.m_gui.transform.Find("Health");
         Transform parent = healthTransform != null ? healthTransform : hudData.m_gui.transform;

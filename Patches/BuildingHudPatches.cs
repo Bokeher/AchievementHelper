@@ -28,6 +28,28 @@ internal static class BuildingFilterState
             buildUi.UpdatePieceButtons();
         }
     }
+
+    internal static void ResetFilterPreservingSelection()
+    {
+        if (!FilterActive)
+        {
+            return;
+        }
+
+        FilterActive = false;
+        Player? player = Player.m_localPlayer;
+        if (player == null || player.m_buildPieces == null)
+        {
+            return;
+        }
+
+        Piece? selected = player.GetSelectedPiece();
+        player.UpdateAvailablePiecesList();
+        if (selected != null)
+        {
+            player.SetSelectedPiece(selected);
+        }
+    }
 }
 
 [HarmonyPatch(typeof(PieceTable))]
@@ -61,7 +83,7 @@ internal static class PieceTableFilterPatches
         BuildingFilterState.TotalMissingCount = missingCount;
 
         if (!Plugin.ModEnabled.Value ||
-            !Plugin.ShowBuildIcons.Value ||
+            !Plugin.EnableNotBuiltFilter.Value ||
             !BuildingFilterState.FilterActive ||
             !hasTargets)
         {
@@ -118,7 +140,7 @@ internal static class PlayerBuildingFilterPatches
         typeof(bool))]
     private static void PlacePiece_Postfix(Player __instance)
     {
-        if (__instance != Player.m_localPlayer || !Plugin.ModEnabled.Value || !Plugin.ShowBuildIcons.Value)
+        if (__instance != Player.m_localPlayer || !Plugin.ModEnabled.Value || !Plugin.EnableNotBuiltFilter.Value)
         {
             return;
         }
@@ -143,7 +165,7 @@ internal static class BuildUiPieceButtonPatches
     private static void Setup_Postfix(BuildUiPieceButton __instance, Piece pieceInfo)
     {
         bool showBadge = Plugin.ModEnabled.Value &&
-                         Plugin.ShowBuildIcons.Value &&
+                         Plugin.ShowUnbuiltPieceBadges.Value &&
                          AchievementService.IsPieceMissingForAchievement(pieceInfo);
 
         Transform? badge = __instance.transform.Find(UnbuiltBadgeName);
@@ -229,10 +251,20 @@ internal static class BuildUiFilterPatches
         RefreshFilterButton(__instance);
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(nameof(BuildUi.Close))]
+    private static void Close_Postfix()
+    {
+        if (Plugin.ResetBuildFilterOnClose.Value)
+        {
+            BuildingFilterState.ResetFilterPreservingSelection();
+        }
+    }
+
     private static void RefreshFilterButton(BuildUi buildUi)
     {
         bool show = Plugin.ModEnabled.Value &&
-                    Plugin.ShowBuildIcons.Value &&
+                    Plugin.EnableNotBuiltFilter.Value &&
                     BuildingFilterState.TableHasBuildTargets &&
                     buildUi.m_currentBuildTool != null &&
                     !buildUi.m_currentBuildTool.m_hideAdvancedMenu;
@@ -297,7 +329,7 @@ internal static class HudBuildingPatches
         }
 
         List<Piece> buildPieces = player.GetBuildPieces();
-        bool enabled = Plugin.ModEnabled.Value && Plugin.ShowBuildIcons.Value;
+        bool enabled = Plugin.ModEnabled.Value && Plugin.ShowUnbuiltPieceBadges.Value;
 
         for (int i = 0; i < __instance.m_pieceIcons.Count; i++)
         {
@@ -339,7 +371,7 @@ internal static class HudBuildingPatches
     private static void SetupPieceInfo_Postfix(Hud __instance, Piece piece)
     {
         if (!Plugin.ModEnabled.Value ||
-            !Plugin.ShowBuildIcons.Value ||
+            !Plugin.ShowUnbuiltPieceDescription.Value ||
             piece == null ||
             __instance.m_pieceDescription == null)
         {

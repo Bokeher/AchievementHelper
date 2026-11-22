@@ -19,7 +19,10 @@ internal static class InventoryGuiCraftingFilterPatches
     [HarmonyPatch(nameof(InventoryGui.Hide))]
     private static void Hide_Postfix()
     {
-        _filterActive = false;
+        if (Plugin.ResetCraftingFilterOnClose.Value)
+        {
+            _filterActive = false;
+        }
     }
 
     [HarmonyPrefix]
@@ -33,7 +36,9 @@ internal static class InventoryGuiCraftingFilterPatches
     [HarmonyPatch(nameof(InventoryGui.DoCrafting))]
     private static void DoCrafting_Postfix(InventoryGui __instance)
     {
-        if (Plugin.ModEnabled.Value && Plugin.ShowCraftingFilter.Value && __instance.InCraftTab())
+        if (Plugin.ModEnabled.Value &&
+            (Plugin.EnableNotCraftedFilter.Value || Plugin.EnableNotCookedFilter.Value) &&
+            __instance.InCraftTab())
         {
             __instance.UpdateCraftingPanel(false);
         }
@@ -43,7 +48,7 @@ internal static class InventoryGuiCraftingFilterPatches
     [HarmonyPatch(nameof(InventoryGui.UpdateRecipeList))]
     private static void UpdateRecipeList_Prefix(InventoryGui __instance, ref List<Recipe> recipes)
     {
-        if (!Plugin.ModEnabled.Value || !Plugin.ShowCraftingFilter.Value || !__instance.InCraftTab())
+        if (!Plugin.ModEnabled.Value || !__instance.InCraftTab())
         {
             _filterButton?.SetVisible(false);
             return;
@@ -76,6 +81,16 @@ internal static class InventoryGuiCraftingFilterPatches
         }
 
         bool isCookingMode = foodRecipeCount > 0 && foodRecipeCount * 2 >= totalCraftable;
+        bool filterEnabled = isCookingMode
+            ? Plugin.EnableNotCookedFilter.Value
+            : Plugin.EnableNotCraftedFilter.Value;
+
+        if (!filterEnabled)
+        {
+            _filterButton?.SetVisible(false);
+            return;
+        }
+
         UpdateFilterButton(__instance, isCookingMode, missingCount);
 
         if (_filterActive && filtered != null)
