@@ -21,6 +21,7 @@
 - **Always Show Counter Progress:** For milestone/counter achievements (such as "Chop 500 trees"), progress is always displayed.
 - **Completion Percentage on Tiles:** Display completion percentage (`%`) directly on achievement tiles in the main achievements list for non-hidden, multi-step/counter achievements.
 - **Biome Grouping in Details:** Group supported achievement detail lists by biome progression with `(completed / total)` per biome header and an `Uncategorized` group for unrecognized entries: enemies (`KillAllCreatures`, `KillAllCreaturesHard`) from `SpawnSystem` biomes, and items/food/trophies (`AllItemCraft`, `AllWeaponCraft`, `AllFoodCooked`, `AllFoodEaten`, `FindAllTrophies`) derived recursively from base materials, mob drops, cooking station conversions, and required station levels.
+- **Hide Completed Filter in Details:** Add a persistent `Hide Completed` toggle button in the top-left corner of multi-condition achievement detail windows. When enabled, hides completed rows and 100%-completed biome groups across all opened achievements until toggled off.
 - **Display Types (`show:`):**
   - `all`: Shows every condition name and its full progress (`x / y`) immediately.
   - `revealable`: Shows the progress counter (`x / y`) while keeping uncompleted condition names hidden as `???` by default; pressing the **Reveal** button in the corner of the details window (or the Master Reveal All button) reveals all missing items/conditions.

@@ -15,16 +15,21 @@ internal static class AchievementsGuiPatches
 {
     private const string RevealButtonName = "AchievementHelper_RevealButton";
     private const string HideButtonName = "AchievementHelper_HideButton";
+    private const string HideCompletedButtonName = "AchievementHelper_HideCompletedButton";
 
     private static Achievement? _currentAchievement;
     private static TMP_Text? _detailsHeaderText;
     private static Button? _revealButton;
     private static Button? _hideButton;
+    private static Button? _hideCompletedButton;
+    private static bool _hideCompletedActive;
 
     private static readonly Color CompletedColor = Color.green;
     private static readonly Color RevealedNameColor = new(0.88f, 0.88f, 0.88f, 1f);
     private static readonly Color RevealedProgressColor = new(1f, 0.85f, 0.4f, 1f);
     private static readonly Color HiddenColor = Color.gray;
+    private static readonly Color FilterActiveTextColor = new(1f, 0.85f, 0.35f, 1f);
+    private static readonly Color FilterActiveBgColor = new(0.85f, 0.65f, 0.2f, 1f);
 
     [HarmonyPrefix]
     [HarmonyPatch(nameof(AchievementsGui.OnOpenAchievementDetails))]
@@ -50,6 +55,9 @@ internal static class AchievementsGuiPatches
         UpdateRevealButton(__instance, achievement);
 
         bool concealed = AchievementService.IsConcealed(achievement);
+        bool multiCondition = GetTotalConditionCount(achievement) > 1;
+        UpdateHideCompletedButton(__instance, achievement, !concealed && multiCondition);
+
         if (concealed)
         {
             AchievementDetailUnlockCondition row = UnityEngine.Object.Instantiate(
@@ -64,10 +72,28 @@ internal static class AchievementsGuiPatches
         }
 
         int diffIndex = (int)achievement.m_difficultyRequirement;
+        bool hideCompleted = _hideCompletedActive && multiCondition;
+
+        if (hideCompleted && !HasAnyIncompleteCondition(achievement, diffIndex))
+        {
+            AchievementDetailUnlockCondition row = UnityEngine.Object.Instantiate(
+                __instance.m_achievementDetailsElementPrefab,
+                __instance.m_achievementDetailsListRoot);
+            row.gameObject.SetActive(true);
+            row.StatName.color = CompletedColor;
+            row.Progress.color = CompletedColor;
+            row.StatName.text = "All conditions completed";
+            row.Progress.text = "100%";
+            return false;
+        }
 
         foreach (Achievement.PlayerStatRequirement req in achievement.m_statTrigger)
         {
             float currentAmount = AchievementService.GetEffectivePlayerStat(diffIndex, req.m_stat);
+            if (hideCompleted && currentAmount >= req.m_amountAboveEquals)
+            {
+                continue;
+            }
             __instance.CreateStatRow(req.m_stat.ToString(), currentAmount, req.m_amountAboveEquals);
         }
 
@@ -75,6 +101,10 @@ internal static class AchievementsGuiPatches
         {
             if (other != null)
             {
+                if (hideCompleted && other.m_unlocked)
+                {
+                    continue;
+                }
                 __instance.CreateStatRow(other.m_name, other.m_unlocked ? 1f : 0f, 1f);
             }
         }
@@ -100,11 +130,11 @@ internal static class AchievementsGuiPatches
                     req.m_amount,
                     AchievementService.FormatStatName(req.m_stat),
                     BiomeClassifier.GetEnemyBiome(req.m_stat)));
-            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, enemyEntries));
+            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, enemyEntries, hideCompleted));
         }
         else
         {
-            __instance.StartCoroutine(PopulateEnemyStatsEffective(__instance, achievement, diffIndex));
+            __instance.StartCoroutine(PopulateEnemyStatsEffective(__instance, achievement, diffIndex, hideCompleted));
         }
 
         if (groupFoodEatenByBiome)
@@ -117,11 +147,11 @@ internal static class AchievementsGuiPatches
                     req.m_amount,
                     AchievementService.FormatStatName(req.m_stat),
                     BiomeClassifier.GetItemBiome(req.m_stat)));
-            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, foodEntries));
+            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, foodEntries, hideCompleted));
         }
         else
         {
-            __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_foodEatenTriggers, diffIndex, s => s.m_foodEatenStats));
+            __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_foodEatenTriggers, diffIndex, s => s.m_foodEatenStats, hideCompleted));
         }
 
         if (groupCraftItemsByBiome)
@@ -134,11 +164,11 @@ internal static class AchievementsGuiPatches
                     req.m_amount,
                     AchievementService.FormatStatName(req.m_stat),
                     BiomeClassifier.GetItemBiome(req.m_stat)));
-            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, craftEntries));
+            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, craftEntries, hideCompleted));
         }
         else
         {
-            __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemCraftTriggers, diffIndex, s => s.m_itemCraftStats));
+            __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemCraftTriggers, diffIndex, s => s.m_itemCraftStats, hideCompleted));
         }
 
         if (groupTrophiesByBiome)
@@ -151,17 +181,17 @@ internal static class AchievementsGuiPatches
                     req.m_amount,
                     AchievementService.FormatStatName(req.m_stat),
                     BiomeClassifier.GetItemBiome(req.m_stat)));
-            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, trophyEntries));
+            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, trophyEntries, hideCompleted));
         }
         else
         {
-            __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemPickupTriggers, diffIndex, s => s.m_itemPickupStats));
+            __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemPickupTriggers, diffIndex, s => s.m_itemPickupStats, hideCompleted));
         }
-        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownCommandsTriggers, diffIndex, s => s.m_knownCommands));
-        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldKeysTriggers, diffIndex, s => s.m_knownWorldKeys));
-        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldTriggers, diffIndex, s => s.m_knownWorlds));
-        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_pickableTriggers, diffIndex, s => s.m_pickableStats));
-        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_piecePlacedTriggers, diffIndex, s => s.m_piecesPlacedStats));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownCommandsTriggers, diffIndex, s => s.m_knownCommands, hideCompleted));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldKeysTriggers, diffIndex, s => s.m_knownWorldKeys, hideCompleted));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldTriggers, diffIndex, s => s.m_knownWorlds, hideCompleted));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_pickableTriggers, diffIndex, s => s.m_pickableStats, hideCompleted));
+        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_piecePlacedTriggers, diffIndex, s => s.m_piecesPlacedStats, hideCompleted));
 
         if (__instance.m_detailsScrollbar != null)
         {
@@ -171,12 +201,17 @@ internal static class AchievementsGuiPatches
         return false;
     }
 
-    private static IEnumerator PopulateEnemyStatsEffective(AchievementsGui gui, Achievement achievement, int diffIndex)
+    private static IEnumerator PopulateEnemyStatsEffective(AchievementsGui gui, Achievement achievement, int diffIndex, bool hideCompleted)
     {
         int count = 0;
         foreach (Achievement.EnemyStatRequirement req in achievement.m_enemyStatsTriggers)
         {
             float currentAmount = AchievementService.GetEffectiveEnemyStat(diffIndex, req.m_modifier, req.m_stat);
+            if (hideCompleted && currentAmount >= req.m_amount)
+            {
+                continue;
+            }
+
             gui.CreateStatRow(req.m_stat, currentAmount, req.m_amount);
             count++;
             if (count >= gui.m_detailStatsPerFrame)
@@ -191,12 +226,18 @@ internal static class AchievementsGuiPatches
         AchievementsGui gui,
         List<Achievement.DictStatRequirement> triggers,
         int diffIndex,
-        Func<PlayerProfile.PlayerStats, Dictionary<string, float>> selector)
+        Func<PlayerProfile.PlayerStats, Dictionary<string, float>> selector,
+        bool hideCompleted)
     {
         int count = 0;
         foreach (Achievement.DictStatRequirement req in triggers)
         {
             float currentAmount = AchievementService.GetEffectiveDictStat(diffIndex, selector, req.m_stat);
+            if (hideCompleted && currentAmount >= req.m_amount)
+            {
+                continue;
+            }
+
             gui.CreateStatRow(req.m_stat, currentAmount, req.m_amount);
             count++;
             if (count >= gui.m_detailStatsPerFrame)
@@ -228,7 +269,8 @@ internal static class AchievementsGuiPatches
     private static IEnumerator PopulateGroupedEntriesEffective(
         AchievementsGui gui,
         Achievement achievement,
-        IEnumerable<GroupedStatEntry> sourceEntries)
+        IEnumerable<GroupedStatEntry> sourceEntries,
+        bool hideCompleted)
     {
         AchievementDisplayMode mode = AchievementService.GetDisplayMode(achievement);
         bool allRevealed = mode == AchievementDisplayMode.All || AchievementService.IsRevealed(achievement);
@@ -258,6 +300,11 @@ internal static class AchievementsGuiPatches
                 }
             }
 
+            if (hideCompleted && completedInGroup >= entries.Count)
+            {
+                continue;
+            }
+
             entries.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase));
 
             string headerLabel = anyVisibleInGroup || group.Key == BiomeTier.Uncategorized
@@ -274,6 +321,11 @@ internal static class AchievementsGuiPatches
 
             foreach (GroupedStatEntry entry in entries)
             {
+                if (hideCompleted && entry.Current >= entry.Target)
+                {
+                    continue;
+                }
+
                 gui.CreateStatRow(entry.StatKey, entry.Current, entry.Target);
                 count++;
                 if (count >= gui.m_detailStatsPerFrame)
@@ -583,5 +635,105 @@ internal static class AchievementsGuiPatches
 
         cached = button;
         return cached;
+    }
+
+    private static void UpdateHideCompletedButton(AchievementsGui gui, Achievement achievement, bool show)
+    {
+        Button? btn = EnsureCornerButton(gui, HideCompletedButtonName, "Hide Completed", ref _hideCompletedButton);
+        if (btn == null)
+        {
+            return;
+        }
+
+        btn.gameObject.SetActive(show);
+        if (!show)
+        {
+            return;
+        }
+
+        if (btn.transform is RectTransform rt)
+        {
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.sizeDelta = new Vector2(168f, 30f);
+            rt.anchoredPosition = new Vector2(14f, -12f);
+        }
+
+        TMP_Text? label = btn.GetComponentInChildren<TMP_Text>(true);
+        if (label != null)
+        {
+            label.enableAutoSizing = false;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.overflowMode = TextOverflowModes.Overflow;
+            label.text = "Hide Completed";
+            label.fontSize = 14f;
+            label.color = _hideCompletedActive ? FilterActiveTextColor : Color.white;
+        }
+
+        Image? bg = btn.GetComponent<Image>();
+        if (bg != null)
+        {
+            bg.color = _hideCompletedActive ? FilterActiveBgColor : Color.white;
+        }
+
+        btn.transform.SetAsLastSibling();
+        btn.onClick = new Button.ButtonClickedEvent();
+        btn.onClick.AddListener(() =>
+        {
+            _hideCompletedActive = !_hideCompletedActive;
+            gui.CloseDetails();
+            gui.OnOpenAchievementDetails(achievement, true);
+        });
+    }
+
+    private static int GetTotalConditionCount(Achievement achievement)
+    {
+        return achievement.m_statTrigger.Count +
+               achievement.m_otherAchievementTriggers.Count +
+               achievement.m_enemyStatsTriggers.Count +
+               achievement.m_foodEatenTriggers.Count +
+               achievement.m_itemCraftTriggers.Count +
+               achievement.m_itemPickupTriggers.Count +
+               achievement.m_knownCommandsTriggers.Count +
+               achievement.m_knownWorldKeysTriggers.Count +
+               achievement.m_knownWorldTriggers.Count +
+               achievement.m_pickableTriggers.Count +
+               achievement.m_piecePlacedTriggers.Count;
+    }
+
+    private static bool HasAnyIncompleteCondition(Achievement achievement, int diffIndex)
+    {
+        foreach (var req in achievement.m_statTrigger)
+            if (AchievementService.GetEffectivePlayerStat(diffIndex, req.m_stat) < req.m_amountAboveEquals)
+                return true;
+
+        foreach (var other in achievement.m_otherAchievementTriggers)
+            if (other != null && !other.m_unlocked)
+                return true;
+
+        foreach (var req in achievement.m_enemyStatsTriggers)
+            if (AchievementService.GetEffectiveEnemyStat(diffIndex, req.m_modifier, req.m_stat) < req.m_amount)
+                return true;
+
+        return HasIncompleteDictTrigger(diffIndex, achievement.m_foodEatenTriggers, s => s.m_foodEatenStats) ||
+               HasIncompleteDictTrigger(diffIndex, achievement.m_itemCraftTriggers, s => s.m_itemCraftStats) ||
+               HasIncompleteDictTrigger(diffIndex, achievement.m_itemPickupTriggers, s => s.m_itemPickupStats) ||
+               HasIncompleteDictTrigger(diffIndex, achievement.m_knownCommandsTriggers, s => s.m_knownCommands) ||
+               HasIncompleteDictTrigger(diffIndex, achievement.m_knownWorldKeysTriggers, s => s.m_knownWorldKeys) ||
+               HasIncompleteDictTrigger(diffIndex, achievement.m_knownWorldTriggers, s => s.m_knownWorlds) ||
+               HasIncompleteDictTrigger(diffIndex, achievement.m_pickableTriggers, s => s.m_pickableStats) ||
+               HasIncompleteDictTrigger(diffIndex, achievement.m_piecePlacedTriggers, s => s.m_piecesPlacedStats);
+    }
+
+    private static bool HasIncompleteDictTrigger(
+        int diffIndex,
+        List<Achievement.DictStatRequirement> triggers,
+        Func<PlayerProfile.PlayerStats, Dictionary<string, float>> selector)
+    {
+        foreach (var req in triggers)
+            if (AchievementService.GetEffectiveDictStat(diffIndex, selector, req.m_stat) < req.m_amount)
+                return true;
+        return false;
     }
 }
