@@ -119,6 +119,8 @@ internal static class AchievementsGuiPatches
                                        achievement.m_id == "AllFoodCooked");
         bool groupTrophiesByBiome = Plugin.GroupDetailsByBiome.Value &&
                                     achievement.m_id == "FindAllTrophies";
+        bool groupBuildPiecesByBiome = Plugin.GroupDetailsByBiome.Value &&
+                                       achievement.m_id == "AllBuildPieces";
 
         if (groupEnemiesByBiome)
         {
@@ -191,7 +193,23 @@ internal static class AchievementsGuiPatches
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldKeysTriggers, diffIndex, s => s.m_knownWorldKeys, hideCompleted));
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldTriggers, diffIndex, s => s.m_knownWorlds, hideCompleted));
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_pickableTriggers, diffIndex, s => s.m_pickableStats, hideCompleted));
-        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_piecePlacedTriggers, diffIndex, s => s.m_piecesPlacedStats, hideCompleted));
+
+        if (groupBuildPiecesByBiome)
+        {
+            BiomeClassifier.LogUncategorizedPieces(achievement.m_id, achievement.m_piecePlacedTriggers.Select(t => t.m_stat));
+            IEnumerable<GroupedStatEntry> pieceEntries = achievement.m_piecePlacedTriggers.Select(req =>
+                new GroupedStatEntry(
+                    req.m_stat,
+                    AchievementService.GetEffectiveDictStat(diffIndex, s => s.m_piecesPlacedStats, req.m_stat),
+                    req.m_amount,
+                    AchievementService.FormatStatName(req.m_stat),
+                    BiomeClassifier.GetPieceBiome(req.m_stat)));
+            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, pieceEntries, hideCompleted));
+        }
+        else
+        {
+            __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_piecePlacedTriggers, diffIndex, s => s.m_piecesPlacedStats, hideCompleted));
+        }
 
         if (__instance.m_detailsScrollbar != null)
         {

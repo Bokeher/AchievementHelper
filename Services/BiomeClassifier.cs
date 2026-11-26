@@ -118,6 +118,9 @@ public static class BiomeClassifier
             ["Acorn"] = BiomeTier.Meadows,
             ["AxeHead1"] = BiomeTier.Meadows,
             ["AxeHead2"] = BiomeTier.Meadows,
+            ["BarberKit"] = BiomeTier.Meadows,
+            ["Ironpit"] = BiomeTier.Meadows,
+            ["StoneRock"] = BiomeTier.Meadows,
             ["Fish1"] = BiomeTier.Meadows, // Perch
             ["Fish2"] = BiomeTier.Meadows, // Pike
 
@@ -191,6 +194,9 @@ public static class BiomeClassifier
             ["SpiceForests"] = BiomeTier.Swamp,
             ["SpiceOceans"] = BiomeTier.Swamp,
             ["HelmetRootCrown"] = BiomeTier.Swamp,
+            ["BarrelRings"] = BiomeTier.Swamp,
+            ["CandleWick"] = BiomeTier.Swamp,
+            ["SilverNecklace"] = BiomeTier.Swamp,
             ["Fish6"] = BiomeTier.Swamp, // Giant herring
 
             // 5. Mountain
@@ -283,13 +289,19 @@ public static class BiomeClassifier
             ["CharcoalResin"] = BiomeTier.Ashlands,
             ["ProustitePowder"] = BiomeTier.Ashlands,
             ["CharredBone"] = BiomeTier.Ashlands,
+            ["Charredskull"] = BiomeTier.Ashlands,
             ["CharredCogwheel"] = BiomeTier.Ashlands,
+            ["Pot_Shard_Green"] = BiomeTier.Ashlands,
             ["AskHide"] = BiomeTier.Ashlands,
             ["AskBladder"] = BiomeTier.Ashlands,
             ["AsksvinNeck"] = BiomeTier.Ashlands,
             ["AsksvinPelvis"] = BiomeTier.Ashlands,
             ["AsksvinRibcage"] = BiomeTier.Ashlands,
             ["AsksvinSkull"] = BiomeTier.Ashlands,
+            ["AsksvinCarrionNeck"] = BiomeTier.Ashlands,
+            ["AsksvinCarrionPelvic"] = BiomeTier.Ashlands,
+            ["AsksvinCarrionRibcage"] = BiomeTier.Ashlands,
+            ["AsksvinCarrionSkull"] = BiomeTier.Ashlands,
             ["MorgenHeart"] = BiomeTier.Ashlands,
             ["MorgenSinew"] = BiomeTier.Ashlands,
             ["BonemawSerpentTooth"] = BiomeTier.Ashlands,
@@ -447,13 +459,16 @@ public static class BiomeClassifier
     private static readonly Dictionary<string, BiomeTier> DerivedMaterialBiomes = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, Recipe> RecipeBySharedName = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, List<CookingConversionSource>> CookingSourcesBySharedName = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, Piece> PieceByName = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, string> PrefabNameBySharedName = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, BiomeTier> ItemBiomeCache = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, BiomeTier> PieceBiomeCache = new(StringComparer.Ordinal);
     private static readonly HashSet<string> LoggedSummaryKeys = new(StringComparer.OrdinalIgnoreCase);
 
     private static bool _enemyIndexBuilt;
     private static bool _itemIndexBuilt;
     private static bool _cookingIndexBuilt;
+    private static bool _pieceIndexBuilt;
 
     public static void ResetCache()
     {
@@ -461,12 +476,15 @@ public static class BiomeClassifier
         DerivedMaterialBiomes.Clear();
         RecipeBySharedName.Clear();
         CookingSourcesBySharedName.Clear();
+        PieceByName.Clear();
         PrefabNameBySharedName.Clear();
         ItemBiomeCache.Clear();
+        PieceBiomeCache.Clear();
         LoggedSummaryKeys.Clear();
         _enemyIndexBuilt = false;
         _itemIndexBuilt = false;
         _cookingIndexBuilt = false;
+        _pieceIndexBuilt = false;
     }
 
     public static BiomeTier GetEnemyBiome(string enemySharedName)
@@ -507,6 +525,150 @@ public static class BiomeClassifier
         BiomeTier result = ResolveItemBiome(sharedName, visiting);
         ItemBiomeCache[sharedName] = result;
         return result;
+    }
+
+    public static BiomeTier GetPieceBiome(string pieceName)
+    {
+        if (string.IsNullOrEmpty(pieceName))
+        {
+            return BiomeTier.Uncategorized;
+        }
+
+        EnsureEnemyIndexBuilt();
+        EnsureItemIndexBuilt();
+        EnsureCookingIndexBuilt();
+        EnsurePieceIndexBuilt();
+
+        if (PieceBiomeCache.TryGetValue(pieceName, out BiomeTier cached))
+        {
+            return cached;
+        }
+
+        if (!PieceByName.TryGetValue(pieceName, out Piece piece) || piece == null)
+        {
+            PieceBiomeCache[pieceName] = BiomeTier.Uncategorized;
+            return BiomeTier.Uncategorized;
+        }
+
+        HashSet<string> visiting = new(StringComparer.Ordinal);
+        BiomeTier highest = BiomeTier.Meadows;
+        bool anyIngredient = false;
+
+        if (piece.m_resources != null)
+        {
+            foreach (Piece.Requirement req in piece.m_resources)
+            {
+                if (req == null || req.m_resItem == null || req.m_amount <= 0)
+                {
+                    continue;
+                }
+
+                anyIngredient = true;
+                BiomeTier tier = ResolveIngredientBiome(req.m_resItem, visiting);
+                if (tier == BiomeTier.Uncategorized)
+                {
+                    PieceBiomeCache[pieceName] = BiomeTier.Uncategorized;
+                    return BiomeTier.Uncategorized;
+                }
+
+                if (tier > highest)
+                {
+                    highest = tier;
+                }
+            }
+        }
+
+        BiomeTier result = anyIngredient ? highest : BiomeTier.Uncategorized;
+        if (result != BiomeTier.Uncategorized &&
+            piece.m_craftingStation != null &&
+            !piece.m_craftingStation.m_upgrader)
+        {
+            BiomeTier stationTier = GetCraftingStationBiome(piece.m_craftingStation, 1);
+            if (stationTier != BiomeTier.Uncategorized && stationTier > result)
+            {
+                result = stationTier;
+            }
+        }
+
+        PieceBiomeCache[pieceName] = result;
+        return result;
+    }
+
+    public static void LogUncategorizedPieces(string logKey, IEnumerable<string> pieceNames)
+    {
+        if (!LoggedSummaryKeys.Add("pieces:" + logKey))
+        {
+            return;
+        }
+
+        EnsureEnemyIndexBuilt();
+        EnsureItemIndexBuilt();
+        EnsureCookingIndexBuilt();
+        EnsurePieceIndexBuilt();
+
+        Dictionary<string, int> unknownCounts = new(StringComparer.OrdinalIgnoreCase);
+        int uncategorizedPieces = 0;
+
+        foreach (string pieceName in pieceNames)
+        {
+            if (GetPieceBiome(pieceName) != BiomeTier.Uncategorized)
+            {
+                continue;
+            }
+
+            uncategorizedPieces++;
+            if (!PieceByName.TryGetValue(pieceName, out Piece piece) || piece == null || piece.m_resources == null)
+            {
+                string key = $"MISSING_PIECE:{pieceName}";
+                unknownCounts.TryGetValue(key, out int c);
+                unknownCounts[key] = c + 1;
+                continue;
+            }
+
+            HashSet<string> visited = new(StringComparer.Ordinal);
+            HashSet<string> unknownLeaves = new(StringComparer.OrdinalIgnoreCase);
+            foreach (Piece.Requirement req in piece.m_resources)
+            {
+                if (req == null || req.m_resItem == null || req.m_amount <= 0) continue;
+                string ingPrefab = Utils.GetPrefabName(req.m_resItem.gameObject);
+                string? ingShared = req.m_resItem.m_itemData?.m_shared?.m_name;
+                if (!string.IsNullOrEmpty(ingPrefab) && TryGetKnownMaterialBiome(ingPrefab, out _)) continue;
+                if (!string.IsNullOrEmpty(ingShared) && GetItemBiome(ingShared!) != BiomeTier.Uncategorized) continue;
+
+                if (!string.IsNullOrEmpty(ingShared) &&
+                    (RecipeBySharedName.ContainsKey(ingShared!) || CookingSourcesBySharedName.ContainsKey(ingShared!)))
+                {
+                    CollectUnknownLeaves(ingShared!, visited, unknownLeaves);
+                }
+                else if (!string.IsNullOrEmpty(ingPrefab))
+                {
+                    unknownLeaves.Add(ingPrefab);
+                }
+            }
+
+            foreach (string leaf in unknownLeaves)
+            {
+                unknownCounts.TryGetValue(leaf, out int c);
+                unknownCounts[leaf] = c + 1;
+            }
+        }
+
+        if (uncategorizedPieces == 0)
+        {
+            Plugin.Log.LogInfo($"[BiomeClassifier] {logKey}: all build pieces categorized.");
+            return;
+        }
+
+        string topUnknown = string.Join(
+            ", ",
+            unknownCounts
+                .OrderByDescending(kvp => kvp.Value)
+                .ThenBy(kvp => kvp.Key)
+                .Take(30)
+                .Select(kvp => $"{kvp.Key}({kvp.Value})"));
+
+        Plugin.Log.LogInfo(
+            $"[BiomeClassifier] {logKey}: {uncategorizedPieces} uncategorized build pieces. Top unknown materials: {topUnknown}");
     }
 
     public static void LogUncategorizedEnemies(string logKey, IEnumerable<string> enemyNames)
@@ -1143,5 +1305,52 @@ public static class BiomeClassifier
         }
 
         Plugin.Log.LogInfo($"[BiomeClassifier] Indexed {cookingConversions} cooking conversions.");
+    }
+
+    private static void EnsurePieceIndexBuilt()
+    {
+        if (_pieceIndexBuilt || ZNetScene.instance == null || ZNetScene.instance.m_prefabs == null)
+        {
+            return;
+        }
+
+        _pieceIndexBuilt = true;
+        PieceBiomeCache.Clear();
+
+        foreach (GameObject prefab in ZNetScene.instance.m_prefabs)
+        {
+            if (prefab == null) continue;
+            Piece piece = prefab.GetComponent<Piece>();
+            if (piece == null || string.IsNullOrEmpty(piece.m_name)) continue;
+
+            if (!PieceByName.TryGetValue(piece.m_name, out Piece existing) || (!existing.m_enabled && piece.m_enabled))
+            {
+                PieceByName[piece.m_name] = piece;
+            }
+        }
+
+        if (ObjectDB.instance != null && ObjectDB.instance.m_items != null)
+        {
+            foreach (GameObject itemObj in ObjectDB.instance.m_items)
+            {
+                if (itemObj == null) continue;
+                PieceTable? table = itemObj.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_buildPieces;
+                if (table == null || table.m_pieces == null) continue;
+
+                foreach (GameObject piecePrefab in table.m_pieces)
+                {
+                    if (piecePrefab == null) continue;
+                    Piece piece = piecePrefab.GetComponent<Piece>();
+                    if (piece == null || string.IsNullOrEmpty(piece.m_name)) continue;
+
+                    if (!PieceByName.ContainsKey(piece.m_name))
+                    {
+                        PieceByName[piece.m_name] = piece;
+                    }
+                }
+            }
+        }
+
+        Plugin.Log.LogInfo($"[BiomeClassifier] Indexed {PieceByName.Count} build pieces.");
     }
 }
