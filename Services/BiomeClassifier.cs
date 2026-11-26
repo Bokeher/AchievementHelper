@@ -116,6 +116,14 @@ public static class BiomeClassifier
             ["BeechSeeds"] = BiomeTier.Meadows,
             ["BirchSeeds"] = BiomeTier.Meadows,
             ["Acorn"] = BiomeTier.Meadows,
+            ["AxeHead1"] = BiomeTier.Meadows,
+            ["AxeHead2"] = BiomeTier.Meadows,
+            ["CookedMeat"] = BiomeTier.Meadows,
+            ["CookedDeerMeat"] = BiomeTier.Meadows,
+            ["NeckTailGrilled"] = BiomeTier.Meadows,
+            ["FishCooked"] = BiomeTier.Meadows,
+            ["Fish1"] = BiomeTier.Meadows, // Perch
+            ["Fish2"] = BiomeTier.Meadows, // Pike
 
             // 2. Black Forest
             ["RoundLog"] = BiomeTier.BlackForest,
@@ -133,6 +141,7 @@ public static class BiomeClassifier
             ["TrollHide"] = BiomeTier.BlackForest,
             ["BjornHide"] = BiomeTier.BlackForest,
             ["BearHide"] = BiomeTier.BlackForest,
+            ["CookedBjornMeat"] = BiomeTier.BlackForest,
             ["Blueberries"] = BiomeTier.BlackForest,
             ["Thistle"] = BiomeTier.BlackForest,
             ["MushroomYellow"] = BiomeTier.BlackForest,
@@ -143,16 +152,22 @@ public static class BiomeClassifier
             ["CryptKey"] = BiomeTier.BlackForest,
             ["YmirRemains"] = BiomeTier.BlackForest,
             ["Thunderstone"] = BiomeTier.BlackForest,
+            ["FishingBait"] = BiomeTier.BlackForest,
+            ["FireworksRocket_White"] = BiomeTier.BlackForest,
             ["Coins"] = BiomeTier.BlackForest,
             ["Amber"] = BiomeTier.BlackForest,
             ["AmberPearl"] = BiomeTier.BlackForest,
             ["Ruby"] = BiomeTier.BlackForest,
+            ["Fish5"] = BiomeTier.BlackForest, // Trollfish
 
             // 3. Ocean
             ["Chitin"] = BiomeTier.Ocean,
             ["SerpentScale"] = BiomeTier.Ocean,
             ["SerpentMeat"] = BiomeTier.Ocean,
             ["SerpentMeatCooked"] = BiomeTier.Ocean,
+            ["Fish3"] = BiomeTier.Ocean, // Tuna
+            ["Fish8"] = BiomeTier.Ocean, // Coral cod
+            ["Fish12"] = BiomeTier.Ocean, // Pufferfish
 
             // 4. Swamp
             ["IronScrap"] = BiomeTier.Swamp,
@@ -170,6 +185,18 @@ public static class BiomeClassifier
             ["TurnipSeeds"] = BiomeTier.Swamp,
             ["Wishbone"] = BiomeTier.Swamp,
             ["ScytheHandle"] = BiomeTier.Swamp,
+            ["BlobVial"] = BiomeTier.Swamp,
+            ["PungentPebbles"] = BiomeTier.Swamp,
+            ["FragrantBundle"] = BiomeTier.Swamp,
+            ["CuredSquirrelHamstring"] = BiomeTier.Swamp,
+            ["PowderedDragonEgg"] = BiomeTier.Swamp,
+            ["FreshSeaweed"] = BiomeTier.Swamp,
+            ["Toadstool"] = BiomeTier.Swamp,
+            ["MushroomBzerker"] = BiomeTier.Swamp,
+            ["SpiceForests"] = BiomeTier.Swamp,
+            ["SpiceOceans"] = BiomeTier.Swamp,
+            ["HelmetRootCrown"] = BiomeTier.Swamp,
+            ["Fish6"] = BiomeTier.Swamp, // Giant herring
 
             // 5. Mountain
             ["SilverOre"] = BiomeTier.Mountain,
@@ -180,6 +207,9 @@ public static class BiomeClassifier
             ["WolfPelt"] = BiomeTier.Mountain,
             ["WolfFang"] = BiomeTier.Mountain,
             ["WolfMeat"] = BiomeTier.Mountain,
+            ["CookedWolfMeat"] = BiomeTier.Mountain,
+            ["WolfHairBundle"] = BiomeTier.Mountain,
+            ["WolfClaw"] = BiomeTier.Mountain,
             ["FenrisHair"] = BiomeTier.Mountain,
             ["FenrisClaw"] = BiomeTier.Mountain,
             ["JuteRed"] = BiomeTier.Mountain,
@@ -187,6 +217,8 @@ public static class BiomeClassifier
             ["OnionSeeds"] = BiomeTier.Mountain,
             ["DragonEgg"] = BiomeTier.Mountain,
             ["DragonTear"] = BiomeTier.Mountain,
+            ["SpiceMountains"] = BiomeTier.Mountain,
+            ["Fish4_cave"] = BiomeTier.Mountain, // Tetra
 
             // 6. Plains
             ["BlackMetalScrap"] = BiomeTier.Plains,
@@ -195,15 +227,21 @@ public static class BiomeClassifier
             ["Needle"] = BiomeTier.Plains,
             ["LoxPelt"] = BiomeTier.Plains,
             ["LoxMeat"] = BiomeTier.Plains,
+            ["CookedLoxMeat"] = BiomeTier.Plains,
             ["Flax"] = BiomeTier.Plains,
             ["LinenThread"] = BiomeTier.Plains,
             ["Barley"] = BiomeTier.Plains,
             ["BarleyFlour"] = BiomeTier.Plains,
+            ["Bread"] = BiomeTier.Plains,
+            ["LoxPie"] = BiomeTier.Plains,
+            ["SpicePlains"] = BiomeTier.Plains,
             ["Cloudberry"] = BiomeTier.Plains,
             ["GoblinTotem"] = BiomeTier.Plains,
             ["YagluthDrop"] = BiomeTier.Plains,
             ["ChickenEgg"] = BiomeTier.Plains,
             ["ChickenMeat"] = BiomeTier.Plains,
+            ["CookedChickenMeat"] = BiomeTier.Plains,
+            ["Fish7"] = BiomeTier.Plains, // Grouper
 
             // 7. Mistlands
             ["YggdrasilWood"] = BiomeTier.Mistlands,
@@ -220,6 +258,7 @@ public static class BiomeClassifier
             ["Bilebag"] = BiomeTier.Mistlands,
             ["RoyalJelly"] = BiomeTier.Mistlands,
             ["JuteBlue"] = BiomeTier.Mistlands,
+            ["Hook"] = BiomeTier.Mistlands,
             ["DvergrNeedle"] = BiomeTier.Mistlands,
             ["DvergrKeyFragment"] = BiomeTier.Mistlands,
             ["DvergrKey"] = BiomeTier.Mistlands,
@@ -227,9 +266,14 @@ public static class BiomeClassifier
             ["Lantern"] = BiomeTier.Mistlands,
             ["QueenDrop"] = BiomeTier.Mistlands,
             ["BugMeat"] = BiomeTier.Mistlands,
+            ["CookedBugMeat"] = BiomeTier.Mistlands,
             ["HareMeat"] = BiomeTier.Mistlands,
+            ["CookedHareMeat"] = BiomeTier.Mistlands,
             ["MushroomJotunPuffs"] = BiomeTier.Mistlands,
             ["MushroomMagecap"] = BiomeTier.Mistlands,
+            ["MisthareSupreme"] = BiomeTier.Mistlands,
+            ["SpiceMistlands"] = BiomeTier.Mistlands,
+            ["Fish9"] = BiomeTier.Mistlands, // Anglerfish
 
             // 8. Ashlands
             ["Blackwood"] = BiomeTier.Ashlands,
@@ -243,6 +287,7 @@ public static class BiomeClassifier
             ["Bell"] = BiomeTier.Ashlands,
             ["ShieldCore"] = BiomeTier.Ashlands,
             ["FaderDrop"] = BiomeTier.Ashlands,
+            ["FaderEmber"] = BiomeTier.Ashlands,
             ["GemstoneRed"] = BiomeTier.Ashlands,
             ["GemstoneBlue"] = BiomeTier.Ashlands,
             ["GemstoneGreen"] = BiomeTier.Ashlands,
@@ -264,16 +309,23 @@ public static class BiomeClassifier
             ["BonemawTooth"] = BiomeTier.Ashlands,
             ["CelestialFeather"] = BiomeTier.Ashlands,
             ["Fiddlehead"] = BiomeTier.Ashlands,
+            ["Fiddleheadfern"] = BiomeTier.Ashlands,
             ["SmokePuff"] = BiomeTier.Ashlands,
+            ["MushroomSmokePuff"] = BiomeTier.Ashlands,
             ["Vineberry"] = BiomeTier.Ashlands,
             ["VineberryCluster"] = BiomeTier.Ashlands,
             ["VineberrySeeds"] = BiomeTier.Ashlands,
             ["VoltureMeat"] = BiomeTier.Ashlands,
+            ["CookedVoltureMeat"] = BiomeTier.Ashlands,
             ["AsksvinMeat"] = BiomeTier.Ashlands,
+            ["CookedAsksvinMeat"] = BiomeTier.Ashlands,
             ["BonemawSerpentMeat"] = BiomeTier.Ashlands,
+            ["BonemawSerpentMeatCooked"] = BiomeTier.Ashlands,
             ["DyrnwynBladeFragment"] = BiomeTier.Ashlands,
             ["DyrnwynHiltFragment"] = BiomeTier.Ashlands,
             ["DyrnwynTipFragment"] = BiomeTier.Ashlands,
+            ["SpiceAshlands"] = BiomeTier.Ashlands,
+            ["Fish11"] = BiomeTier.Ashlands, // Magmafish
 
             // 9. Deep North
             ["Frostwood"] = BiomeTier.DeepNorth,
@@ -282,6 +334,9 @@ public static class BiomeClassifier
             ["FrostCore"] = BiomeTier.DeepNorth,
             ["GoldOre"] = BiomeTier.DeepNorth,
             ["Gold"] = BiomeTier.DeepNorth,
+            ["NornThread"] = BiomeTier.DeepNorth,
+            ["OrbFrostFire"] = BiomeTier.DeepNorth,
+            ["OrbThunderBlood"] = BiomeTier.DeepNorth,
             ["AncientGemstoneOrange"] = BiomeTier.DeepNorth,
             ["AncientGemstoneGreen"] = BiomeTier.DeepNorth,
             ["AncientGemstonePurple"] = BiomeTier.DeepNorth,
@@ -289,10 +344,46 @@ public static class BiomeClassifier
             ["Lingonberry"] = BiomeTier.DeepNorth,
             ["Kale"] = BiomeTier.DeepNorth,
             ["KaleSeeds"] = BiomeTier.DeepNorth,
+            ["Poteitr"] = BiomeTier.DeepNorth,
+            ["Oat"] = BiomeTier.DeepNorth,
+            ["OatSeeds"] = BiomeTier.DeepNorth,
+            ["OatFlour"] = BiomeTier.DeepNorth,
             ["Snowball"] = BiomeTier.DeepNorth,
             ["SealBlubber"] = BiomeTier.DeepNorth,
             ["MooseHide"] = BiomeTier.DeepNorth,
             ["MooseMeat"] = BiomeTier.DeepNorth,
+            ["CookedMooseMeat"] = BiomeTier.DeepNorth,
+            ["SpiceDeepNorth"] = BiomeTier.DeepNorth,
+            ["Fish10"] = BiomeTier.DeepNorth, // Northern salmon
+            // Smelted Nord weapons, shields, armor, and staffs (cast in Frost Foundry, no standard Recipe)
+            ["AtgeirGold"] = BiomeTier.DeepNorth,
+            ["AxeGold"] = BiomeTier.DeepNorth,
+            ["BattleaxeGold"] = BiomeTier.DeepNorth,
+            ["BowGold"] = BiomeTier.DeepNorth,
+            ["CrossbowGold"] = BiomeTier.DeepNorth,
+            ["FistGold"] = BiomeTier.DeepNorth,
+            ["KnifeGold"] = BiomeTier.DeepNorth,
+            ["MaceGold"] = BiomeTier.DeepNorth,
+            ["SledgeGold"] = BiomeTier.DeepNorth,
+            ["SpearGold"] = BiomeTier.DeepNorth,
+            ["SwordGold"] = BiomeTier.DeepNorth,
+            ["THSwordGold"] = BiomeTier.DeepNorth,
+            ["ShieldGold"] = BiomeTier.DeepNorth,
+            ["ShieldGoldBuckler"] = BiomeTier.DeepNorth,
+            ["ShieldGoldTower"] = BiomeTier.DeepNorth,
+            ["HelmetDNHeavy"] = BiomeTier.DeepNorth,
+            ["ArmorDeepNorthHeavyChest"] = BiomeTier.DeepNorth,
+            ["ArmorDeepNorthHeavylegs"] = BiomeTier.DeepNorth,
+            ["HelmetDNMediumHood"] = BiomeTier.DeepNorth,
+            ["ArmorDeepNorthMediumChest"] = BiomeTier.DeepNorth,
+            ["ArmorDeepNorthMediumlegs"] = BiomeTier.DeepNorth,
+            ["HelmetDNMage"] = BiomeTier.DeepNorth,
+            ["ArmorDeepNorthMageChest"] = BiomeTier.DeepNorth,
+            ["ArmorDeepNorthMagelegs"] = BiomeTier.DeepNorth,
+            ["StaffFrostOrbs"] = BiomeTier.DeepNorth,
+            ["StaffThunderBlood"] = BiomeTier.DeepNorth,
+            ["StaffOrbofAhri"] = BiomeTier.DeepNorth,
+            ["StaffSpiritCaller"] = BiomeTier.DeepNorth,
         };
 
     private static readonly Dictionary<string, BiomeTier> EnemyBiomeByName = new(StringComparer.Ordinal);
@@ -446,6 +537,12 @@ public static class BiomeClassifier
     {
         if (BaseMaterialBiomes.TryGetValue(prefabName, out tier))
         {
+            return true;
+        }
+
+        if (prefabName.StartsWith("Mold", StringComparison.OrdinalIgnoreCase))
+        {
+            tier = BiomeTier.DeepNorth;
             return true;
         }
 
