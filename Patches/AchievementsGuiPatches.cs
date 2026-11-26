@@ -87,6 +87,8 @@ internal static class AchievementsGuiPatches
                                       (achievement.m_id == "AllItemCraft" ||
                                        achievement.m_id == "AllWeaponCraft" ||
                                        achievement.m_id == "AllFoodCooked");
+        bool groupTrophiesByBiome = Plugin.GroupDetailsByBiome.Value &&
+                                    achievement.m_id == "FindAllTrophies";
 
         if (groupEnemiesByBiome)
         {
@@ -139,7 +141,22 @@ internal static class AchievementsGuiPatches
             __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemCraftTriggers, diffIndex, s => s.m_itemCraftStats));
         }
 
-        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemPickupTriggers, diffIndex, s => s.m_itemPickupStats));
+        if (groupTrophiesByBiome)
+        {
+            BiomeClassifier.LogUncategorizedMaterialsForItems(achievement.m_id, achievement.m_itemPickupTriggers.Select(t => t.m_stat));
+            IEnumerable<GroupedStatEntry> trophyEntries = achievement.m_itemPickupTriggers.Select(req =>
+                new GroupedStatEntry(
+                    req.m_stat,
+                    AchievementService.GetEffectiveDictStat(diffIndex, s => s.m_itemPickupStats, req.m_stat),
+                    req.m_amount,
+                    AchievementService.FormatStatName(req.m_stat),
+                    BiomeClassifier.GetItemBiome(req.m_stat)));
+            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, trophyEntries));
+        }
+        else
+        {
+            __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_itemPickupTriggers, diffIndex, s => s.m_itemPickupStats));
+        }
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownCommandsTriggers, diffIndex, s => s.m_knownCommands));
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldKeysTriggers, diffIndex, s => s.m_knownWorldKeys));
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldTriggers, diffIndex, s => s.m_knownWorlds));

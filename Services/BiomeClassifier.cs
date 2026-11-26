@@ -135,6 +135,7 @@ public static class BiomeClassifier
             ["BoneFragments"] = BiomeTier.BlackForest,
             ["GreydwarfEye"] = BiomeTier.BlackForest,
             ["TrollHide"] = BiomeTier.BlackForest,
+            ["TrophyForestTroll"] = BiomeTier.BlackForest,
             ["BjornHide"] = BiomeTier.BlackForest,
             ["BearHide"] = BiomeTier.BlackForest,
             ["Blueberries"] = BiomeTier.BlackForest,
