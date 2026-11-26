@@ -503,7 +503,7 @@ public static class BiomeClassifier
             bool addedAnyIngredient = false;
             foreach (Piece.Requirement req in recipe.m_resources)
             {
-                if (req == null || req.m_resItem == null || req.m_amount <= 0)
+                if (req == null || req.m_resItem == null || req.m_amount <= 0 || req.m_upgraderResource)
                 {
                     continue;
                 }
@@ -742,7 +742,14 @@ public static class BiomeClassifier
 
         foreach (Recipe recipe in ObjectDB.instance.m_recipes)
         {
-            if (recipe == null || recipe.m_item == null) continue;
+            if (recipe == null ||
+                recipe.m_item == null ||
+                !recipe.m_enabled ||
+                recipe.m_noCraftOnlyUpgrade ||
+                (recipe.m_craftingStation != null && recipe.m_craftingStation.m_upgrader))
+            {
+                continue;
+            }
             string? sharedName = recipe.m_item.m_itemData?.m_shared?.m_name;
             if (string.IsNullOrEmpty(sharedName)) continue;
 
