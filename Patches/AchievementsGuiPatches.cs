@@ -81,8 +81,12 @@ internal static class AchievementsGuiPatches
 
         bool groupEnemiesByBiome = Plugin.GroupDetailsByBiome.Value &&
                                    (achievement.m_id == "KillAllCreatures" || achievement.m_id == "KillAllCreaturesHard");
+        bool groupFoodEatenByBiome = Plugin.GroupDetailsByBiome.Value &&
+                                     achievement.m_id == "AllFoodEaten";
         bool groupCraftItemsByBiome = Plugin.GroupDetailsByBiome.Value &&
-                                      (achievement.m_id == "AllItemCraft" || achievement.m_id == "AllWeaponCraft");
+                                      (achievement.m_id == "AllItemCraft" ||
+                                       achievement.m_id == "AllWeaponCraft" ||
+                                       achievement.m_id == "AllFoodCooked");
 
         if (groupEnemiesByBiome)
         {
@@ -101,7 +105,22 @@ internal static class AchievementsGuiPatches
             __instance.StartCoroutine(PopulateEnemyStatsEffective(__instance, achievement, diffIndex));
         }
 
-        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_foodEatenTriggers, diffIndex, s => s.m_foodEatenStats));
+        if (groupFoodEatenByBiome)
+        {
+            BiomeClassifier.LogUncategorizedMaterialsForItems(achievement.m_id, achievement.m_foodEatenTriggers.Select(t => t.m_stat));
+            IEnumerable<GroupedStatEntry> foodEntries = achievement.m_foodEatenTriggers.Select(req =>
+                new GroupedStatEntry(
+                    req.m_stat,
+                    AchievementService.GetEffectiveDictStat(diffIndex, s => s.m_foodEatenStats, req.m_stat),
+                    req.m_amount,
+                    AchievementService.FormatStatName(req.m_stat),
+                    BiomeClassifier.GetItemBiome(req.m_stat)));
+            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, foodEntries));
+        }
+        else
+        {
+            __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_foodEatenTriggers, diffIndex, s => s.m_foodEatenStats));
+        }
 
         if (groupCraftItemsByBiome)
         {

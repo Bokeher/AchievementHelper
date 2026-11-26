@@ -92,7 +92,7 @@ public static class BiomeClassifier
             ["$spiritcaller_moose"] = BiomeTier.DeepNorth,
         };
 
-    // Base materials mapped by prefab name (case-insensitive; take precedence over mob-derived drops)
+    // Base materials mapped by prefab name (case-insensitive; take precedence over mob-derived drops and cooking conversions)
     private static readonly Dictionary<string, BiomeTier> BaseMaterialBiomes =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -118,10 +118,6 @@ public static class BiomeClassifier
             ["Acorn"] = BiomeTier.Meadows,
             ["AxeHead1"] = BiomeTier.Meadows,
             ["AxeHead2"] = BiomeTier.Meadows,
-            ["CookedMeat"] = BiomeTier.Meadows,
-            ["CookedDeerMeat"] = BiomeTier.Meadows,
-            ["NeckTailGrilled"] = BiomeTier.Meadows,
-            ["FishCooked"] = BiomeTier.Meadows,
             ["Fish1"] = BiomeTier.Meadows, // Perch
             ["Fish2"] = BiomeTier.Meadows, // Pike
 
@@ -141,7 +137,6 @@ public static class BiomeClassifier
             ["TrollHide"] = BiomeTier.BlackForest,
             ["BjornHide"] = BiomeTier.BlackForest,
             ["BearHide"] = BiomeTier.BlackForest,
-            ["CookedBjornMeat"] = BiomeTier.BlackForest,
             ["Blueberries"] = BiomeTier.BlackForest,
             ["Thistle"] = BiomeTier.BlackForest,
             ["MushroomYellow"] = BiomeTier.BlackForest,
@@ -164,7 +159,6 @@ public static class BiomeClassifier
             ["Chitin"] = BiomeTier.Ocean,
             ["SerpentScale"] = BiomeTier.Ocean,
             ["SerpentMeat"] = BiomeTier.Ocean,
-            ["SerpentMeatCooked"] = BiomeTier.Ocean,
             ["Fish3"] = BiomeTier.Ocean, // Tuna
             ["Fish8"] = BiomeTier.Ocean, // Coral cod
             ["Fish12"] = BiomeTier.Ocean, // Pufferfish
@@ -207,7 +201,6 @@ public static class BiomeClassifier
             ["WolfPelt"] = BiomeTier.Mountain,
             ["WolfFang"] = BiomeTier.Mountain,
             ["WolfMeat"] = BiomeTier.Mountain,
-            ["CookedWolfMeat"] = BiomeTier.Mountain,
             ["WolfHairBundle"] = BiomeTier.Mountain,
             ["WolfClaw"] = BiomeTier.Mountain,
             ["FenrisHair"] = BiomeTier.Mountain,
@@ -227,20 +220,16 @@ public static class BiomeClassifier
             ["Needle"] = BiomeTier.Plains,
             ["LoxPelt"] = BiomeTier.Plains,
             ["LoxMeat"] = BiomeTier.Plains,
-            ["CookedLoxMeat"] = BiomeTier.Plains,
             ["Flax"] = BiomeTier.Plains,
             ["LinenThread"] = BiomeTier.Plains,
             ["Barley"] = BiomeTier.Plains,
             ["BarleyFlour"] = BiomeTier.Plains,
-            ["Bread"] = BiomeTier.Plains,
-            ["LoxPie"] = BiomeTier.Plains,
             ["SpicePlains"] = BiomeTier.Plains,
             ["Cloudberry"] = BiomeTier.Plains,
             ["GoblinTotem"] = BiomeTier.Plains,
             ["YagluthDrop"] = BiomeTier.Plains,
             ["ChickenEgg"] = BiomeTier.Plains,
             ["ChickenMeat"] = BiomeTier.Plains,
-            ["CookedChickenMeat"] = BiomeTier.Plains,
             ["Fish7"] = BiomeTier.Plains, // Grouper
 
             // 7. Mistlands
@@ -266,12 +255,9 @@ public static class BiomeClassifier
             ["Lantern"] = BiomeTier.Mistlands,
             ["QueenDrop"] = BiomeTier.Mistlands,
             ["BugMeat"] = BiomeTier.Mistlands,
-            ["CookedBugMeat"] = BiomeTier.Mistlands,
             ["HareMeat"] = BiomeTier.Mistlands,
-            ["CookedHareMeat"] = BiomeTier.Mistlands,
             ["MushroomJotunPuffs"] = BiomeTier.Mistlands,
             ["MushroomMagecap"] = BiomeTier.Mistlands,
-            ["MisthareSupreme"] = BiomeTier.Mistlands,
             ["SpiceMistlands"] = BiomeTier.Mistlands,
             ["Fish9"] = BiomeTier.Mistlands, // Anglerfish
 
@@ -316,11 +302,8 @@ public static class BiomeClassifier
             ["VineberryCluster"] = BiomeTier.Ashlands,
             ["VineberrySeeds"] = BiomeTier.Ashlands,
             ["VoltureMeat"] = BiomeTier.Ashlands,
-            ["CookedVoltureMeat"] = BiomeTier.Ashlands,
             ["AsksvinMeat"] = BiomeTier.Ashlands,
-            ["CookedAsksvinMeat"] = BiomeTier.Ashlands,
             ["BonemawSerpentMeat"] = BiomeTier.Ashlands,
-            ["BonemawSerpentMeatCooked"] = BiomeTier.Ashlands,
             ["DyrnwynBladeFragment"] = BiomeTier.Ashlands,
             ["DyrnwynHiltFragment"] = BiomeTier.Ashlands,
             ["DyrnwynTipFragment"] = BiomeTier.Ashlands,
@@ -352,7 +335,7 @@ public static class BiomeClassifier
             ["SealBlubber"] = BiomeTier.DeepNorth,
             ["MooseHide"] = BiomeTier.DeepNorth,
             ["MooseMeat"] = BiomeTier.DeepNorth,
-            ["CookedMooseMeat"] = BiomeTier.DeepNorth,
+            ["GlowWorm"] = BiomeTier.DeepNorth,
             ["SpiceDeepNorth"] = BiomeTier.DeepNorth,
             ["Fish10"] = BiomeTier.DeepNorth, // Northern salmon
             // Smelted Nord weapons, shields, armor, and staffs (cast in Frost Foundry, no standard Recipe)
@@ -386,26 +369,103 @@ public static class BiomeClassifier
             ["StaffSpiritCaller"] = BiomeTier.DeepNorth,
         };
 
+    // Static biome progression per crafting station level (index 0 = level 1, index 1 = level 2, ...)
+    private static readonly Dictionary<string, BiomeTier[]> StationLevelBiomes =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["$piece_workbench"] = new[]
+            {
+                BiomeTier.Meadows,      // lvl 1: Workbench
+                BiomeTier.Meadows,      // lvl 2: Chopping Block
+                BiomeTier.Meadows,      // lvl 3: Tanning Rack
+                BiomeTier.BlackForest,  // lvl 4: Adze
+                BiomeTier.Mountain,     // lvl 5: Tool Shelf
+            },
+            ["$piece_forge"] = new[]
+            {
+                BiomeTier.BlackForest,  // lvl 1: Forge
+                BiomeTier.BlackForest,  // lvl 2: Anvils
+                BiomeTier.BlackForest,  // lvl 3: Forge Cooler
+                BiomeTier.Swamp,        // lvl 4: Smith's Anvil
+                BiomeTier.Swamp,        // lvl 5: Forge Toolrack
+                BiomeTier.Swamp,        // lvl 6: Forge Bellows
+                BiomeTier.Mountain,     // lvl 7: Grinding Wheel
+            },
+            ["$piece_cauldron"] = new[]
+            {
+                BiomeTier.BlackForest,  // lvl 1: Cauldron
+                BiomeTier.Swamp,        // lvl 2: Spice Rack
+                BiomeTier.Mountain,     // lvl 3: Butcher's Table
+                BiomeTier.Plains,       // lvl 4: Pots and Pans
+                BiomeTier.Mistlands,    // lvl 5: Mortar and Pestle
+                BiomeTier.Ashlands,     // lvl 6: Ashlands upgrade
+                BiomeTier.DeepNorth,    // lvl 7: Deep North upgrade
+            },
+            ["$piece_meadcauldron"] = new[] { BiomeTier.BlackForest },
+            ["$piece_preptable"] = new[] { BiomeTier.Swamp },
+            ["$piece_artisanstation"] = new[] { BiomeTier.Mountain },
+            ["$piece_blackforge"] = new[]
+            {
+                BiomeTier.Mistlands,    // lvl 1
+                BiomeTier.Mistlands,    // lvl 2
+                BiomeTier.Ashlands,     // lvl 3
+                BiomeTier.Ashlands,     // lvl 4
+                BiomeTier.DeepNorth,    // lvl 5
+            },
+            ["$piece_magetable"] = new[]
+            {
+                BiomeTier.Mistlands,    // lvl 1
+                BiomeTier.Mistlands,    // lvl 2
+                BiomeTier.Ashlands,     // lvl 3
+                BiomeTier.DeepNorth,    // lvl 4
+            },
+        };
+
+    // Static biome per CookingStation prefab name (campfire grill, iron cooking station, stone oven)
+    private static readonly Dictionary<string, BiomeTier> CookingStationBiomes =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["piece_cookingstation"] = BiomeTier.Meadows,
+            ["piece_cookingstation_iron"] = BiomeTier.Swamp,
+            ["piece_oven"] = BiomeTier.Mountain,
+        };
+
+    private readonly struct CookingConversionSource
+    {
+        public readonly string FromSharedName;
+        public readonly BiomeTier StationBiome;
+
+        public CookingConversionSource(string fromSharedName, BiomeTier stationBiome)
+        {
+            FromSharedName = fromSharedName;
+            StationBiome = stationBiome;
+        }
+    }
+
     private static readonly Dictionary<string, BiomeTier> EnemyBiomeByName = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, BiomeTier> DerivedMaterialBiomes = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, Recipe> RecipeBySharedName = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, List<CookingConversionSource>> CookingSourcesBySharedName = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, string> PrefabNameBySharedName = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, BiomeTier> ItemBiomeCache = new(StringComparer.Ordinal);
     private static readonly HashSet<string> LoggedSummaryKeys = new(StringComparer.OrdinalIgnoreCase);
 
     private static bool _enemyIndexBuilt;
     private static bool _itemIndexBuilt;
+    private static bool _cookingIndexBuilt;
 
     public static void ResetCache()
     {
         EnemyBiomeByName.Clear();
         DerivedMaterialBiomes.Clear();
         RecipeBySharedName.Clear();
+        CookingSourcesBySharedName.Clear();
         PrefabNameBySharedName.Clear();
         ItemBiomeCache.Clear();
         LoggedSummaryKeys.Clear();
         _enemyIndexBuilt = false;
         _itemIndexBuilt = false;
+        _cookingIndexBuilt = false;
     }
 
     public static BiomeTier GetEnemyBiome(string enemySharedName)
@@ -435,17 +495,15 @@ public static class BiomeClassifier
 
         EnsureEnemyIndexBuilt();
         EnsureItemIndexBuilt();
+        EnsureCookingIndexBuilt();
 
         if (ItemBiomeCache.TryGetValue(sharedName, out BiomeTier cached))
         {
             return cached;
         }
 
-        HashSet<string> visited = new(StringComparer.Ordinal);
-        HashSet<string> leafPrefabs = new(StringComparer.OrdinalIgnoreCase);
-        CollectBaseMaterials(sharedName, visited, leafPrefabs);
-
-        BiomeTier result = EvaluateLeafMaterials(leafPrefabs);
+        HashSet<string> visiting = new(StringComparer.Ordinal);
+        BiomeTier result = ResolveItemBiome(sharedName, visiting);
         ItemBiomeCache[sharedName] = result;
         return result;
     }
@@ -489,6 +547,7 @@ public static class BiomeClassifier
 
         EnsureEnemyIndexBuilt();
         EnsureItemIndexBuilt();
+        EnsureCookingIndexBuilt();
 
         Dictionary<string, int> unknownCounts = new(StringComparer.OrdinalIgnoreCase);
         int uncategorizedItems = 0;
@@ -502,16 +561,13 @@ public static class BiomeClassifier
 
             uncategorizedItems++;
             HashSet<string> visited = new(StringComparer.Ordinal);
-            HashSet<string> leafPrefabs = new(StringComparer.OrdinalIgnoreCase);
-            CollectBaseMaterials(sharedName, visited, leafPrefabs);
+            HashSet<string> unknownLeaves = new(StringComparer.OrdinalIgnoreCase);
+            CollectUnknownLeaves(sharedName, visited, unknownLeaves);
 
-            foreach (string leaf in leafPrefabs)
+            foreach (string leaf in unknownLeaves)
             {
-                if (!TryGetKnownMaterialBiome(leaf, out _))
-                {
-                    unknownCounts.TryGetValue(leaf, out int c);
-                    unknownCounts[leaf] = c + 1;
-                }
+                unknownCounts.TryGetValue(leaf, out int c);
+                unknownCounts[leaf] = c + 1;
             }
         }
 
@@ -549,37 +605,187 @@ public static class BiomeClassifier
         return DerivedMaterialBiomes.TryGetValue(prefabName, out tier);
     }
 
-    private static BiomeTier EvaluateLeafMaterials(HashSet<string> leafPrefabs)
+    private static BiomeTier ResolveItemBiome(string sharedName, HashSet<string> visiting)
     {
-        if (leafPrefabs.Count == 0)
+        if (string.IsNullOrEmpty(sharedName))
         {
             return BiomeTier.Uncategorized;
         }
 
-        BiomeTier highest = BiomeTier.Meadows;
-        bool anyKnown = false;
-
-        foreach (string prefab in leafPrefabs)
+        if (ItemBiomeCache.TryGetValue(sharedName, out BiomeTier cached))
         {
-            if (!TryGetKnownMaterialBiome(prefab, out BiomeTier tier))
+            return cached;
+        }
+
+        if (PrefabNameBySharedName.TryGetValue(sharedName, out string prefabName) &&
+            TryGetKnownMaterialBiome(prefabName, out BiomeTier directTier))
+        {
+            return directTier;
+        }
+
+        if (!visiting.Add(sharedName))
+        {
+            return BiomeTier.Uncategorized;
+        }
+
+        try
+        {
+            // 1. Crafting recipe (enabled, non-upgrade-only) + required station level
+            if (RecipeBySharedName.TryGetValue(sharedName, out Recipe recipe) &&
+                recipe.m_resources != null &&
+                recipe.m_resources.Length > 0)
             {
-                return BiomeTier.Uncategorized;
+                BiomeTier fromRecipe = EvaluateRecipe(recipe, visiting);
+                if (fromRecipe != BiomeTier.Uncategorized)
+                {
+                    return fromRecipe;
+                }
             }
 
-            anyKnown = true;
-            if (tier > highest)
+            // 2. CookingStation conversions (campfire grill, iron cooking station, stone oven)
+            if (CookingSourcesBySharedName.TryGetValue(sharedName, out List<CookingConversionSource> sources) &&
+                sources.Count > 0)
             {
-                highest = tier;
+                BiomeTier lowest = BiomeTier.Uncategorized;
+                foreach (CookingConversionSource source in sources)
+                {
+                    BiomeTier fromTier = ResolveItemBiome(source.FromSharedName, visiting);
+                    if (fromTier == BiomeTier.Uncategorized)
+                    {
+                        continue;
+                    }
+
+                    BiomeTier effectiveTier = fromTier;
+                    if (source.StationBiome != BiomeTier.Uncategorized && source.StationBiome > effectiveTier)
+                    {
+                        effectiveTier = source.StationBiome;
+                    }
+
+                    if (effectiveTier < lowest)
+                    {
+                        lowest = effectiveTier;
+                    }
+                }
+
+                if (lowest != BiomeTier.Uncategorized)
+                {
+                    return lowest;
+                }
+            }
+
+            return BiomeTier.Uncategorized;
+        }
+        finally
+        {
+            visiting.Remove(sharedName);
+        }
+    }
+
+    private static BiomeTier EvaluateRecipe(Recipe recipe, HashSet<string> visiting)
+    {
+        BiomeTier ingredientTier;
+
+        if (recipe.m_requireOnlyOneIngredient)
+        {
+            BiomeTier lowest = BiomeTier.Uncategorized;
+            foreach (Piece.Requirement req in recipe.m_resources)
+            {
+                if (req == null || req.m_resItem == null || req.m_amount <= 0 || req.m_upgraderResource)
+                {
+                    continue;
+                }
+
+                BiomeTier tier = ResolveIngredientBiome(req.m_resItem, visiting);
+                if (tier != BiomeTier.Uncategorized && tier < lowest)
+                {
+                    lowest = tier;
+                }
+            }
+
+            ingredientTier = lowest;
+        }
+        else
+        {
+            BiomeTier highest = BiomeTier.Meadows;
+            bool anyIngredient = false;
+
+            foreach (Piece.Requirement req in recipe.m_resources)
+            {
+                if (req == null || req.m_resItem == null || req.m_amount <= 0 || req.m_upgraderResource)
+                {
+                    continue;
+                }
+
+                anyIngredient = true;
+                BiomeTier tier = ResolveIngredientBiome(req.m_resItem, visiting);
+                if (tier == BiomeTier.Uncategorized)
+                {
+                    return BiomeTier.Uncategorized;
+                }
+
+                if (tier > highest)
+                {
+                    highest = tier;
+                }
+            }
+
+            ingredientTier = anyIngredient ? highest : BiomeTier.Uncategorized;
+        }
+
+        if (ingredientTier == BiomeTier.Uncategorized)
+        {
+            return BiomeTier.Uncategorized;
+        }
+
+        if (recipe.m_craftingStation != null && !recipe.m_craftingStation.m_upgrader)
+        {
+            BiomeTier stationTier = GetCraftingStationBiome(recipe.m_craftingStation, recipe.m_minStationLevel);
+            if (stationTier != BiomeTier.Uncategorized && stationTier > ingredientTier)
+            {
+                return stationTier;
             }
         }
 
-        return anyKnown ? highest : BiomeTier.Uncategorized;
+        return ingredientTier;
     }
 
-    private static void CollectBaseMaterials(
+    private static BiomeTier ResolveIngredientBiome(ItemDrop resItem, HashSet<string> visiting)
+    {
+        string ingPrefab = Utils.GetPrefabName(resItem.gameObject);
+        if (!string.IsNullOrEmpty(ingPrefab) && TryGetKnownMaterialBiome(ingPrefab, out BiomeTier direct))
+        {
+            return direct;
+        }
+
+        string? ingShared = resItem.m_itemData?.m_shared?.m_name;
+        if (!string.IsNullOrEmpty(ingShared))
+        {
+            return ResolveItemBiome(ingShared!, visiting);
+        }
+
+        return BiomeTier.Uncategorized;
+    }
+
+    private static BiomeTier GetCraftingStationBiome(CraftingStation station, int minLevel)
+    {
+        if (station == null || string.IsNullOrEmpty(station.m_name) || station.m_upgrader)
+        {
+            return BiomeTier.Uncategorized;
+        }
+
+        if (!StationLevelBiomes.TryGetValue(station.m_name, out BiomeTier[] tiers) || tiers.Length == 0)
+        {
+            return BiomeTier.Uncategorized;
+        }
+
+        int index = Math.Max(0, Math.Min(minLevel - 1, tiers.Length - 1));
+        return tiers[index];
+    }
+
+    private static void CollectUnknownLeaves(
         string sharedName,
         HashSet<string> visited,
-        HashSet<string> leafPrefabs)
+        HashSet<string> unknownLeaves)
     {
         if (string.IsNullOrEmpty(sharedName) || !visited.Add(sharedName))
         {
@@ -589,7 +795,6 @@ public static class BiomeClassifier
         if (PrefabNameBySharedName.TryGetValue(sharedName, out string prefabName) &&
             TryGetKnownMaterialBiome(prefabName, out _))
         {
-            leafPrefabs.Add(prefabName);
             return;
         }
 
@@ -597,7 +802,7 @@ public static class BiomeClassifier
             recipe.m_resources != null &&
             recipe.m_resources.Length > 0)
         {
-            bool addedAnyIngredient = false;
+            bool anyIngredient = false;
             foreach (Piece.Requirement req in recipe.m_resources)
             {
                 if (req == null || req.m_resItem == null || req.m_amount <= 0 || req.m_upgraderResource)
@@ -605,33 +810,51 @@ public static class BiomeClassifier
                     continue;
                 }
 
+                anyIngredient = true;
                 string ingPrefab = Utils.GetPrefabName(req.m_resItem.gameObject);
                 string? ingShared = req.m_resItem.m_itemData?.m_shared?.m_name;
-                addedAnyIngredient = true;
 
                 if (!string.IsNullOrEmpty(ingPrefab) && TryGetKnownMaterialBiome(ingPrefab, out _))
                 {
-                    leafPrefabs.Add(ingPrefab);
+                    continue;
                 }
-                else if (!string.IsNullOrEmpty(ingShared) && RecipeBySharedName.ContainsKey(ingShared!))
+
+                if (!string.IsNullOrEmpty(ingShared) && GetItemBiome(ingShared!) != BiomeTier.Uncategorized)
                 {
-                    CollectBaseMaterials(ingShared!, visited, leafPrefabs);
+                    continue;
+                }
+
+                if (!string.IsNullOrEmpty(ingShared) &&
+                    (RecipeBySharedName.ContainsKey(ingShared!) || CookingSourcesBySharedName.ContainsKey(ingShared!)))
+                {
+                    CollectUnknownLeaves(ingShared!, visited, unknownLeaves);
                 }
                 else if (!string.IsNullOrEmpty(ingPrefab))
                 {
-                    leafPrefabs.Add(ingPrefab);
+                    unknownLeaves.Add(ingPrefab);
                 }
             }
 
-            if (addedAnyIngredient)
+            if (anyIngredient)
             {
                 return;
             }
         }
 
+        if (CookingSourcesBySharedName.TryGetValue(sharedName, out List<CookingConversionSource> sources) &&
+            sources.Count > 0)
+        {
+            foreach (CookingConversionSource source in sources)
+            {
+                CollectUnknownLeaves(source.FromSharedName, visited, unknownLeaves);
+            }
+
+            return;
+        }
+
         if (!string.IsNullOrEmpty(prefabName))
         {
-            leafPrefabs.Add(prefabName);
+            unknownLeaves.Add(prefabName);
         }
     }
 
@@ -825,6 +1048,7 @@ public static class BiomeClassifier
         }
 
         _itemIndexBuilt = true;
+        ItemBiomeCache.Clear();
 
         foreach (GameObject itemObj in ObjectDB.instance.m_items)
         {
@@ -847,6 +1071,7 @@ public static class BiomeClassifier
             {
                 continue;
             }
+
             string? sharedName = recipe.m_item.m_itemData?.m_shared?.m_name;
             if (string.IsNullOrEmpty(sharedName)) continue;
 
@@ -860,5 +1085,62 @@ public static class BiomeClassifier
                 RecipeBySharedName[sharedName!] = recipe;
             }
         }
+    }
+
+    private static void EnsureCookingIndexBuilt()
+    {
+        if (_cookingIndexBuilt || ZNetScene.instance == null || ZNetScene.instance.m_prefabs == null)
+        {
+            return;
+        }
+
+        _cookingIndexBuilt = true;
+        ItemBiomeCache.Clear();
+
+        int cookingConversions = 0;
+
+        foreach (GameObject prefab in ZNetScene.instance.m_prefabs)
+        {
+            if (prefab == null) continue;
+
+            CookingStation cookingStation = prefab.GetComponent<CookingStation>();
+            if (cookingStation == null || cookingStation.m_conversion == null) continue;
+
+            string stationPrefab = Utils.GetPrefabName(prefab);
+            BiomeTier stationBiome = CookingStationBiomes.TryGetValue(stationPrefab, out BiomeTier tier)
+                ? tier
+                : BiomeTier.Uncategorized;
+
+            foreach (CookingStation.ItemConversion conv in cookingStation.m_conversion)
+            {
+                string? fromShared = conv?.m_from?.m_itemData?.m_shared?.m_name;
+                string? toShared = conv?.m_to?.m_itemData?.m_shared?.m_name;
+                if (string.IsNullOrEmpty(fromShared) || string.IsNullOrEmpty(toShared) || fromShared == toShared)
+                {
+                    continue;
+                }
+
+                if (!PrefabNameBySharedName.ContainsKey(fromShared!))
+                {
+                    PrefabNameBySharedName[fromShared!] = Utils.GetPrefabName(conv!.m_from.gameObject);
+                }
+
+                if (!PrefabNameBySharedName.ContainsKey(toShared!))
+                {
+                    PrefabNameBySharedName[toShared!] = Utils.GetPrefabName(conv!.m_to.gameObject);
+                }
+
+                if (!CookingSourcesBySharedName.TryGetValue(toShared!, out List<CookingConversionSource> sources))
+                {
+                    sources = new List<CookingConversionSource>();
+                    CookingSourcesBySharedName[toShared!] = sources;
+                }
+
+                sources.Add(new CookingConversionSource(fromShared!, stationBiome));
+                cookingConversions++;
+            }
+        }
+
+        Plugin.Log.LogInfo($"[BiomeClassifier] Indexed {cookingConversions} cooking conversions.");
     }
 }
