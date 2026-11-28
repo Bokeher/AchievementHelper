@@ -23,6 +23,8 @@ internal static class AchievementsGuiPatches
     private static Button? _hideButton;
     private static Button? _hideCompletedButton;
     private static bool _hideCompletedActive;
+    private static readonly Dictionary<BiomeTier, AchievementDetailUnlockCondition> HiddenBiomeHeaders = new();
+    private static readonly Dictionary<string, BiomeTier> StatToBiomeTier = new(StringComparer.Ordinal);
 
     internal static void RefreshOpenDetailsIfVisible()
     {
@@ -388,11 +390,19 @@ internal static class AchievementsGuiPatches
 
             entries.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase));
 
-            string headerLabel = anyVisibleInGroup || group.Key == BiomeTier.Uncategorized
+            bool headerVisible = anyVisibleInGroup ||
+                                 AchievementService.IsBiomeHeaderRevealed(achievement, group.Key);
+            string headerLabel = headerVisible
                 ? group.Key.GetDisplayName()
-                : "???";
+                : "???  (click to reveal)";
 
-            CreateBiomeHeaderRow(gui, headerLabel, completedInGroup, entries.Count);
+            AchievementDetailUnlockCondition headerRow = CreateBiomeHeaderRow(gui, headerLabel, completedInGroup, entries.Count);
+            if (!headerVisible)
+            {
+                HiddenBiomeHeaders[group.Key] = headerRow;
+                MakeBiomeHeaderClickableToReveal(gui, headerRow, achievement, group.Key);
+            }
+
             count++;
             if (count >= gui.m_detailStatsPerFrame)
             {
@@ -402,6 +412,7 @@ internal static class AchievementsGuiPatches
 
             foreach (GroupedStatEntry entry in entries)
             {
+                StatToBiomeTier[entry.StatKey] = group.Key;
                 if (hideCompleted && entry.Current >= entry.Target)
                 {
                     continue;
@@ -418,7 +429,11 @@ internal static class AchievementsGuiPatches
         }
     }
 
-    private static void CreateBiomeHeaderRow(AchievementsGui gui, string biomeName, int completed, int total)
+    private static AchievementDetailUnlockCondition CreateBiomeHeaderRow(
+        AchievementsGui gui,
+        string biomeName,
+        int completed,
+        int total)
     {
         AchievementDetailUnlockCondition row = UnityEngine.Object.Instantiate(
             gui.m_achievementDetailsElementPrefab,
@@ -439,6 +454,59 @@ internal static class AchievementsGuiPatches
         row.Progress.color = headerColor;
         row.StatName.text = $"— {biomeName} —";
         row.Progress.text = $"{completed} / {total}";
+        return row;
+    }
+
+    private static void MakeBiomeHeaderClickableToReveal(
+        AchievementsGui gui,
+        AchievementDetailUnlockCondition headerRow,
+        Achievement achievement,
+        BiomeTier tier)
+    {
+        Image bg = headerRow.gameObject.GetComponent<Image>() ?? headerRow.gameObject.AddComponent<Image>();
+        bg.color = new Color(0f, 0f, 0f, 0.45f);
+        bg.raycastTarget = true;
+
+        Button headerButton = headerRow.gameObject.GetComponent<Button>() ?? headerRow.gameObject.AddComponent<Button>();
+        ColorBlock colors = headerButton.colors;
+        colors.normalColor = new Color(0f, 0f, 0f, 0.45f);
+        colors.highlightedColor = new Color(0.25f, 0.2f, 0.08f, 0.65f);
+        colors.pressedColor = new Color(0.35f, 0.28f, 0.1f, 0.75f);
+        colors.selectedColor = colors.highlightedColor;
+        headerButton.colors = colors;
+        headerButton.targetGraphic = bg;
+
+        headerButton.onClick = new Button.ButtonClickedEvent();
+        headerButton.onClick.AddListener(() =>
+        {
+            AchievementService.RevealBiomeHeader(achievement, tier);
+            RevealBiomeHeaderVisual(headerRow, tier);
+            HiddenBiomeHeaders.Remove(tier);
+            UpdateRevealButton(gui, achievement);
+        });
+    }
+
+    private static void RevealBiomeHeaderVisual(AchievementDetailUnlockCondition headerRow, BiomeTier tier)
+    {
+        if (headerRow == null)
+        {
+            return;
+        }
+
+        headerRow.StatName.text = $"— {tier.GetDisplayName()} —";
+
+        Button? btn = headerRow.gameObject.GetComponent<Button>();
+        if (btn != null)
+        {
+            UnityEngine.Object.Destroy(btn);
+        }
+
+        Image? bg = headerRow.gameObject.GetComponent<Image>();
+        if (bg != null)
+        {
+            bg.color = new Color(0f, 0f, 0f, 0.45f);
+            bg.raycastTarget = false;
+        }
     }
 
     [HarmonyPrefix]
@@ -515,6 +583,8 @@ internal static class AchievementsGuiPatches
 
         __instance.StopAllCoroutines();
         _currentAchievement = null;
+        HiddenBiomeHeaders.Clear();
+        StatToBiomeTier.Clear();
     }
 
     private static void MakeRowClickableToReveal(
@@ -560,12 +630,21 @@ internal static class AchievementsGuiPatches
                 AchievementService.RevealAchievement(achievement);
             }
 
+            if (StatToBiomeTier.TryGetValue(statKey, out BiomeTier tier) &&
+                HiddenBiomeHeaders.TryGetValue(tier, out AchievementDetailUnlockCondition headerRow))
+            {
+                RevealBiomeHeaderVisual(headerRow, tier);
+                HiddenBiomeHeaders.Remove(tier);
+            }
+
             UpdateRevealButton(gui, achievement);
         });
     }
 
     private static void ClearDetailsRows(AchievementsGui gui)
     {
+        HiddenBiomeHeaders.Clear();
+        StatToBiomeTier.Clear();
         foreach (Transform child in gui.m_achievementDetailsListRoot)
         {
             UnityEngine.Object.Destroy(child.gameObject);

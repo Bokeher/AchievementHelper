@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using HarmonyLib;
 using Splatform;
 using Steamworks;
 using UnityEngine;
@@ -158,6 +160,9 @@ public static class AchievementService
     private static readonly HashSet<string> RevealedIds = new(StringComparer.OrdinalIgnoreCase);
     private static bool _revealedLoaded;
 
+    private static readonly FieldInfo? PlayerKnownBiomeField = AccessTools.Field(typeof(Player), "m_knownBiome");
+    private static readonly Dictionary<Heightmap.Biome, BiomeSector> BiomeSectorCache = new();
+
     private static PlayerProfile.PlayerStats[]? _otherCharactersStats;
 
     private static readonly HashSet<string> CraftTargets = new();
@@ -289,6 +294,68 @@ public static class AchievementService
         {
             SaveRevealedIds();
         }
+    }
+
+    public static bool IsBiomeKnownByPlayer(BiomeTier tier)
+    {
+        Player? player = Player.m_localPlayer;
+        if (player == null)
+        {
+            return false;
+        }
+
+        Heightmap.Biome gameBiome = tier.ToGameBiome();
+        if (gameBiome == Heightmap.Biome.None)
+        {
+            return false;
+        }
+
+        if (!BiomeSectorCache.TryGetValue(gameBiome, out BiomeSector sector))
+        {
+            sector = new BiomeSector(null, gameBiome);
+            BiomeSectorCache[gameBiome] = sector;
+        }
+
+        if (player.IsBiomeKnown(sector))
+        {
+            return true;
+        }
+
+        if (PlayerKnownBiomeField?.GetValue(player) is HashSet<string> knownBiomes)
+        {
+            string rawKey = BiomeSector.GetBiomeName(gameBiome);
+            if (knownBiomes.Contains(rawKey))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static bool IsBiomeHeaderRevealed(Achievement achievement, BiomeTier tier)
+    {
+        if (tier == BiomeTier.Uncategorized)
+        {
+            return true;
+        }
+
+        if (IsRevealed(achievement) || IsBiomeKnownByPlayer(tier))
+        {
+            return true;
+        }
+
+        return IsStatRevealed(achievement, $"biome:{tier}");
+    }
+
+    public static void RevealBiomeHeader(Achievement achievement, BiomeTier tier)
+    {
+        if (tier == BiomeTier.Uncategorized)
+        {
+            return;
+        }
+
+        RevealStat(achievement, $"biome:{tier}");
     }
 
     public static bool HasAnyUnrevealedCondition(Achievement achievement)

@@ -32,4 +32,21 @@ public static class BiomeTierExtensions
             _ => "Uncategorized"
         };
     }
+
+    public static Heightmap.Biome ToGameBiome(this BiomeTier tier)
+    {
+        return tier switch
+        {
+            BiomeTier.Meadows => Heightmap.Biome.Meadows,
+            BiomeTier.BlackForest => Heightmap.Biome.BlackForest,
+            BiomeTier.Ocean => Heightmap.Biome.Ocean,
+            BiomeTier.Swamp => Heightmap.Biome.Swamp,
+            BiomeTier.Mountain => Heightmap.Biome.Mountain,
+            BiomeTier.Plains => Heightmap.Biome.Plains,
+            BiomeTier.Mistlands => Heightmap.Biome.Mistlands,
+            BiomeTier.Ashlands => Heightmap.Biome.AshLands,
+            BiomeTier.DeepNorth => Heightmap.Biome.DeepNorth,
+            _ => Heightmap.Biome.None
+        };
+    }
 }
