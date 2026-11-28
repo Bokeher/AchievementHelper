@@ -1230,7 +1230,7 @@ public static class AchievementService
                     ? Localization.instance.Localize(ach.m_name)
                     : ach.m_name;
                 AchievementDisplayMode mode = GetDisplayMode(ach);
-                Plugin.Log.LogInfo(
+                Plugin.Log.LogDebug(
                     $"[Ach #{count:00}] id={ach.m_id} | name=\"{locName}\" | secret={ach.m_isSecret} | diff={ach.m_difficultyRequirement} | mode={mode}");
             }
         }

@@ -684,7 +684,7 @@ public static class BiomeClassifier
 
         if (uncategorizedPieces == 0)
         {
-            Plugin.Log.LogInfo($"[BiomeClassifier] {logKey}: all build pieces categorized.");
+            Plugin.Log.LogDebug($"[BiomeClassifier] {logKey}: all build pieces categorized.");
             return;
         }
 
@@ -721,7 +721,7 @@ public static class BiomeClassifier
 
         if (uncategorized.Count == 0)
         {
-            Plugin.Log.LogInfo($"[BiomeClassifier] {logKey}: all enemies categorized.");
+            Plugin.Log.LogDebug($"[BiomeClassifier] {logKey}: all enemies categorized.");
             return;
         }
 
@@ -765,7 +765,7 @@ public static class BiomeClassifier
 
         if (uncategorizedItems == 0)
         {
-            Plugin.Log.LogInfo($"[BiomeClassifier] {logKey}: all craft items categorized.");
+            Plugin.Log.LogDebug($"[BiomeClassifier] {logKey}: all craft items categorized.");
             return;
         }
 
@@ -1130,7 +1130,7 @@ public static class BiomeClassifier
             }
         }
 
-        Plugin.Log.LogInfo(
+        Plugin.Log.LogDebug(
             $"[BiomeClassifier] Indexed {EnemyBiomeByName.Count} enemies from SpawnSystem and derived {DerivedMaterialBiomes.Count} material biomes from mob drops.");
     }
 
@@ -1342,7 +1342,7 @@ public static class BiomeClassifier
             }
         }
 
-        Plugin.Log.LogInfo($"[BiomeClassifier] Indexed {cookingConversions} cooking conversions.");
+        Plugin.Log.LogDebug($"[BiomeClassifier] Indexed {cookingConversions} cooking conversions.");
     }
 
     private static void EnsurePieceIndexBuilt()
@@ -1389,6 +1389,6 @@ public static class BiomeClassifier
             }
         }
 
-        Plugin.Log.LogInfo($"[BiomeClassifier] Indexed {PieceByName.Count} build pieces.");
+        Plugin.Log.LogDebug($"[BiomeClassifier] Indexed {PieceByName.Count} build pieces.");
     }
 }
