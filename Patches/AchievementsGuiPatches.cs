@@ -121,6 +121,8 @@ internal static class AchievementsGuiPatches
                                        achievement.m_id == "AllFoodCooked");
         bool groupTrophiesByBiome = Plugin.GroupDetailsByBiome.Value &&
                                     achievement.m_id == "FindAllTrophies";
+        bool groupPickablesByBiome = Plugin.GroupDetailsByBiome.Value &&
+                                     achievement.m_id == "GrindFish";
         bool groupBuildPiecesByBiome = Plugin.GroupDetailsByBiome.Value &&
                                        achievement.m_id == "AllBuildPieces";
 
@@ -194,7 +196,23 @@ internal static class AchievementsGuiPatches
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownCommandsTriggers, diffIndex, s => s.m_knownCommands, hideCompleted));
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldKeysTriggers, diffIndex, s => s.m_knownWorldKeys, hideCompleted));
         __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_knownWorldTriggers, diffIndex, s => s.m_knownWorlds, hideCompleted));
-        __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_pickableTriggers, diffIndex, s => s.m_pickableStats, hideCompleted));
+
+        if (groupPickablesByBiome)
+        {
+            BiomeClassifier.LogUncategorizedMaterialsForItems(achievement.m_id, achievement.m_pickableTriggers.Select(t => t.m_stat));
+            IEnumerable<GroupedStatEntry> pickableEntries = achievement.m_pickableTriggers.Select(req =>
+                new GroupedStatEntry(
+                    req.m_stat,
+                    AchievementService.GetEffectiveDictStat(diffIndex, s => s.m_pickableStats, req.m_stat),
+                    req.m_amount,
+                    AchievementService.FormatStatName(req.m_stat),
+                    BiomeClassifier.GetItemBiome(req.m_stat)));
+            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, pickableEntries, hideCompleted));
+        }
+        else
+        {
+            __instance.StartCoroutine(PopulateDetailPanelEffective(__instance, achievement.m_pickableTriggers, diffIndex, s => s.m_pickableStats, hideCompleted));
+        }
 
         if (groupBuildPiecesByBiome)
         {
