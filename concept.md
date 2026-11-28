@@ -36,6 +36,7 @@
 - **Not-Cooked Filter, Badge & Tooltip:** Cooking works similarly to crafting in Valheim, so it follows the same behavior as Crafting, using `Not Cooked (N)` and the corner `!` badge on uncooked recipe icons (including unbaked recipes whose roasted/baked variant is not yet cooked).
 - **Raw Cookable Items:** On raw cookable item tooltips, show if the cooked variant has not been cooked or eaten for the achievement yet.
 - **Not-Eaten Indicator:** On every consumable item tooltip, show whether the item has not been eaten for the achievement (`AllFoodEaten`) yet.
+- **Inventory & Chest Badges:** Display the corner `!` badge on items in the inventory and chests that are not yet crafted, cooked, or eaten for achievements (including raw cookable items whose cooked variant is still missing), configurable in BepInEx config.
 
 ## 5. Building
 - **Unbuilt Piece Indicator:** Display a corner badge on building pieces in the build menu that belong to `AllBuildPieces` and have not been built yet, and append `Not built for achievement` to the piece description.

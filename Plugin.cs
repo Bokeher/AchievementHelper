@@ -38,6 +38,7 @@ public class Plugin : BaseUnityPlugin
     internal static ConfigEntry<bool> ShowNotEatenTooltip = null!;
     internal static ConfigEntry<bool> ShowRawRoastedCookedTooltip = null!;
     internal static ConfigEntry<bool> ShowRawRoastedEatenTooltip = null!;
+    internal static ConfigEntry<bool> ShowInventoryItemBadges = null!;
 
     // 5 - Crafting & Cooking
     internal static ConfigEntry<bool> ShowNotCraftedBadges = null!;
@@ -139,6 +140,11 @@ public class Plugin : BaseUnityPlugin
             "Show Raw Item Not Eaten",
             true,
             "Show 'Cooked variant not eaten for achievement' on raw cookable items.");
+        ShowInventoryItemBadges = Config.Bind(
+            "4 - Item Tooltips",
+            "Show Inventory Item Badge",
+            true,
+            "Show the corner '!' badge on items in your inventory and chests that are not yet crafted, cooked, or eaten for achievements.");
 
         // [5 - Crafting & Cooking]
         ShowNotCraftedBadges = Config.Bind(
