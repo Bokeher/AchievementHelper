@@ -110,7 +110,9 @@ internal static class AchievementsGuiPatches
         }
 
         bool groupEnemiesByBiome = Plugin.GroupDetailsByBiome.Value &&
-                                   (achievement.m_id == "KillAllCreatures" || achievement.m_id == "KillAllCreaturesHard");
+                                   (achievement.m_id == "KillAllCreatures" ||
+                                    achievement.m_id == "KillAllCreaturesHard" ||
+                                    achievement.m_id == "AllMiniBosses");
         bool groupFoodEatenByBiome = Plugin.GroupDetailsByBiome.Value &&
                                      achievement.m_id == "AllFoodEaten";
         bool groupCraftItemsByBiome = Plugin.GroupDetailsByBiome.Value &&
