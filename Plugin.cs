@@ -13,7 +13,7 @@ public class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "com.bokeher.achievementhelper";
     public const string ModName = "AchievementHelper";
-    public const string ModVersion = "0.1.0";
+    public const string ModVersion = "1.0.0";
 
     internal static ManualLogSource Log = null!;
     internal static Plugin Instance = null!;
