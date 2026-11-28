@@ -551,47 +551,76 @@ public static class BiomeClassifier
         }
 
         HashSet<string> visiting = new(StringComparer.Ordinal);
-        BiomeTier highest = BiomeTier.Meadows;
-        bool anyIngredient = false;
-
-        if (piece.m_resources != null)
-        {
-            foreach (Piece.Requirement req in piece.m_resources)
-            {
-                if (req == null || req.m_resItem == null || req.m_amount <= 0)
-                {
-                    continue;
-                }
-
-                anyIngredient = true;
-                BiomeTier tier = ResolveIngredientBiome(req.m_resItem, visiting);
-                if (tier == BiomeTier.Uncategorized)
-                {
-                    PieceBiomeCache[pieceName] = BiomeTier.Uncategorized;
-                    return BiomeTier.Uncategorized;
-                }
-
-                if (tier > highest)
-                {
-                    highest = tier;
-                }
-            }
-        }
-
-        BiomeTier result = anyIngredient ? highest : BiomeTier.Uncategorized;
-        if (result != BiomeTier.Uncategorized &&
-            piece.m_craftingStation != null &&
-            !piece.m_craftingStation.m_upgrader)
-        {
-            BiomeTier stationTier = GetCraftingStationBiome(piece.m_craftingStation, 1);
-            if (stationTier != BiomeTier.Uncategorized && stationTier > result)
-            {
-                result = stationTier;
-            }
-        }
-
+        BiomeTier result = ResolvePieceBiome(piece, visiting);
         PieceBiomeCache[pieceName] = result;
         return result;
+    }
+
+    private static BiomeTier ResolvePieceBiome(Piece piece, HashSet<string> visiting)
+    {
+        if (piece == null)
+        {
+            return BiomeTier.Uncategorized;
+        }
+
+        string pieceKey = !string.IsNullOrEmpty(piece.m_name) ? piece.m_name : piece.name;
+        if (PieceBiomeCache.TryGetValue(pieceKey, out BiomeTier cached))
+        {
+            return cached;
+        }
+
+        string visitKey = "piece:" + pieceKey;
+        if (!visiting.Add(visitKey))
+        {
+            return BiomeTier.Uncategorized;
+        }
+
+        try
+        {
+            BiomeTier highest = BiomeTier.Meadows;
+            bool anyIngredient = false;
+
+            if (piece.m_resources != null)
+            {
+                foreach (Piece.Requirement req in piece.m_resources)
+                {
+                    if (req == null || req.m_resItem == null || req.m_amount <= 0)
+                    {
+                        continue;
+                    }
+
+                    anyIngredient = true;
+                    BiomeTier tier = ResolveIngredientBiome(req.m_resItem, visiting);
+                    if (tier == BiomeTier.Uncategorized)
+                    {
+                        return BiomeTier.Uncategorized;
+                    }
+
+                    if (tier > highest)
+                    {
+                        highest = tier;
+                    }
+                }
+            }
+
+            BiomeTier result = anyIngredient ? highest : BiomeTier.Uncategorized;
+            if (result != BiomeTier.Uncategorized &&
+                piece.m_craftingStation != null &&
+                !piece.m_craftingStation.m_upgrader)
+            {
+                BiomeTier stationTier = GetCraftingStationBiome(piece.m_craftingStation, 1, visiting);
+                if (stationTier != BiomeTier.Uncategorized && stationTier > result)
+                {
+                    result = stationTier;
+                }
+            }
+
+            return result;
+        }
+        finally
+        {
+            visiting.Remove(visitKey);
+        }
     }
 
     public static void LogUncategorizedPieces(string logKey, IEnumerable<string> pieceNames)
@@ -902,7 +931,7 @@ public static class BiomeClassifier
 
         if (recipe.m_craftingStation != null && !recipe.m_craftingStation.m_upgrader)
         {
-            BiomeTier stationTier = GetCraftingStationBiome(recipe.m_craftingStation, recipe.m_minStationLevel);
+            BiomeTier stationTier = GetCraftingStationBiome(recipe.m_craftingStation, recipe.m_minStationLevel, visiting);
             if (stationTier != BiomeTier.Uncategorized && stationTier > ingredientTier)
             {
                 return stationTier;
@@ -929,20 +958,29 @@ public static class BiomeClassifier
         return BiomeTier.Uncategorized;
     }
 
-    private static BiomeTier GetCraftingStationBiome(CraftingStation station, int minLevel)
+    private static BiomeTier GetCraftingStationBiome(CraftingStation station, int minLevel, HashSet<string> visiting)
     {
         if (station == null || string.IsNullOrEmpty(station.m_name) || station.m_upgrader)
         {
             return BiomeTier.Uncategorized;
         }
 
-        if (!StationLevelBiomes.TryGetValue(station.m_name, out BiomeTier[] tiers) || tiers.Length == 0)
+        if (StationLevelBiomes.TryGetValue(station.m_name, out BiomeTier[] tiers) && tiers.Length > 0)
         {
-            return BiomeTier.Uncategorized;
+            int index = Math.Max(0, Math.Min(minLevel - 1, tiers.Length - 1));
+            return tiers[index];
         }
 
-        int index = Math.Max(0, Math.Min(minLevel - 1, tiers.Length - 1));
-        return tiers[index];
+        EnsurePieceIndexBuilt();
+        Piece? stationPiece = station.GetComponent<Piece>();
+        if (stationPiece == null)
+        {
+            PieceByName.TryGetValue(station.m_name, out stationPiece);
+        }
+
+        return stationPiece != null
+            ? ResolvePieceBiome(stationPiece, visiting)
+            : BiomeTier.Uncategorized;
     }
 
     private static void CollectUnknownLeaves(
