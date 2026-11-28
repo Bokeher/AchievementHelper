@@ -38,27 +38,29 @@ public class Plugin : BaseUnityPlugin
     internal static ConfigEntry<bool> ShowNotEatenTooltip = null!;
     internal static ConfigEntry<bool> ShowRawRoastedCookedTooltip = null!;
     internal static ConfigEntry<bool> ShowRawRoastedEatenTooltip = null!;
+
+    // 5 - Badges
     internal static ConfigEntry<bool> ShowInventoryItemBadges = null!;
     internal static ConfigEntry<BadgeCorner> InventoryBadgeCorner = null!;
-
-    // 5 - Crafting & Cooking
     internal static ConfigEntry<bool> ShowNotCraftedBadges = null!;
     internal static ConfigEntry<bool> ShowNotCookedBadges = null!;
+    internal static ConfigEntry<bool> ShowUnbuiltPieceBadges = null!;
+
+    // 6 - Crafting & Cooking
     internal static ConfigEntry<bool> EnableNotCraftedFilter = null!;
     internal static ConfigEntry<bool> EnableNotCookedFilter = null!;
     internal static ConfigEntry<bool> ResetCraftingFilterOnClose = null!;
 
-    // 6 - Building
-    internal static ConfigEntry<bool> ShowUnbuiltPieceBadges = null!;
+    // 7 - Building
     internal static ConfigEntry<bool> ShowUnbuiltPieceDescription = null!;
     internal static ConfigEntry<bool> EnableNotBuiltFilter = null!;
     internal static ConfigEntry<bool> ResetBuildFilterOnClose = null!;
 
-    // 7 - Enemies
+    // 8 - Enemies
     internal static ConfigEntry<bool> ShowUndefeatedEnemyIcon = null!;
     internal static ConfigEntry<bool> ShowMissingTrophyIcon = null!;
 
-    // 8 - Saved State
+    // 9 - Saved State
     internal static ConfigEntry<bool> MasterRevealAll = null!;
     internal static ConfigEntry<string> RevealedAchievementIds = null!;
 
@@ -141,82 +143,99 @@ public class Plugin : BaseUnityPlugin
             "Show Raw Item Not Eaten",
             true,
             "Show 'Cooked variant not eaten for achievement' on raw cookable items.");
+
+        // [5 - Badges]
         ShowInventoryItemBadges = Config.Bind(
-            "4 - Item Tooltips",
-            "Show Inventory Item Badge",
+            "5 - Badges",
+            "Show Inventory Badge",
             true,
-            "Show the corner '!' badge on items in your inventory and chests that are not yet crafted, cooked, or eaten for achievements.");
+            new ConfigDescription(
+                "Show the corner '!' badge on items in your inventory and chests that are not yet crafted, cooked, or eaten for achievements.",
+                null,
+                new ConfigurationManagerAttributes { Order = 50 }));
         InventoryBadgeCorner = Config.Bind(
-            "4 - Item Tooltips",
+            "5 - Badges",
             "Inventory Badge Position",
             BadgeCorner.TopLeft,
-            "Corner of the inventory slot where the '!' badge is displayed.");
-
-        // [5 - Crafting & Cooking]
+            new ConfigDescription(
+                "Corner of the inventory slot where the '!' badge is displayed.",
+                null,
+                new ConfigurationManagerAttributes { Order = 40 }));
         ShowNotCraftedBadges = Config.Bind(
-            "5 - Crafting & Cooking",
-            "Show Not Crafted Badge",
+            "5 - Badges",
+            "Show Crafting Recipe Badge",
             true,
-            "Show the corner '!' badge on uncrafted achievement recipes at crafting stations.");
+            new ConfigDescription(
+                "Show the '!' badge on uncrafted achievement recipes at crafting stations.",
+                null,
+                new ConfigurationManagerAttributes { Order = 30 }));
         ShowNotCookedBadges = Config.Bind(
-            "5 - Crafting & Cooking",
-            "Show Not Cooked Badge",
+            "5 - Badges",
+            "Show Cooking Recipe Badge",
             true,
-            "Show the corner '!' badge on uncooked achievement recipes at cooking stations.");
+            new ConfigDescription(
+                "Show the '!' badge on uncooked achievement recipes at cooking stations.",
+                null,
+                new ConfigurationManagerAttributes { Order = 20 }));
+        ShowUnbuiltPieceBadges = Config.Bind(
+            "5 - Badges",
+            "Show Building Piece Badge",
+            true,
+            new ConfigDescription(
+                "Show the corner '!' badge on unbuilt achievement pieces in the build menu.",
+                null,
+                new ConfigurationManagerAttributes { Order = 10 }));
+
+        // [6 - Crafting & Cooking]
         EnableNotCraftedFilter = Config.Bind(
-            "5 - Crafting & Cooking",
+            "6 - Crafting & Cooking",
             "Show Not Crafted Filter",
             true,
             "Show the 'Not Crafted (N)' toggle button at crafting stations.");
         EnableNotCookedFilter = Config.Bind(
-            "5 - Crafting & Cooking",
+            "6 - Crafting & Cooking",
             "Show Not Cooked Filter",
             true,
             "Show the 'Not Cooked (N)' toggle button at cooking stations.");
         ResetCraftingFilterOnClose = Config.Bind(
-            "5 - Crafting & Cooking",
+            "6 - Crafting & Cooking",
             "Reset Filter On Inventory Close",
             true,
             "Turn off the crafting/cooking filter automatically when closing the inventory.");
 
-        // [6 - Building]
-        ShowUnbuiltPieceBadges = Config.Bind(
-            "6 - Building",
-            "Show Unbuilt Piece Badge",
-            true,
-            "Show the corner '!' badge on unbuilt achievement pieces in the build menu.");
+        // [7 - Building]
         ShowUnbuiltPieceDescription = Config.Bind(
-            "6 - Building",
+            "7 - Building",
             "Show Unbuilt Description",
             true,
             "Show 'Not built for achievement' under the selected piece description.");
         EnableNotBuiltFilter = Config.Bind(
-            "6 - Building",
+            "7 - Building",
             "Show Not Built Filter",
             true,
             "Show the 'Not Built (N)' toggle button in the build menu.");
         ResetBuildFilterOnClose = Config.Bind(
-            "6 - Building",
+            "7 - Building",
             "Reset Filter On Menu Close",
             false,
             "Turn off the Not Built filter every time the build menu closes. When off, it stays active until you unequip the tool.");
 
-        // [7 - Enemies]
+        // [8 - Enemies]
         ShowUndefeatedEnemyIcon = Config.Bind(
-            "7 - Enemies",
+            "8 - Enemies",
             "Show Undefeated Icon",
             true,
             "Show crossed-swords icon next to the health bar of undefeated achievement enemies.");
         ShowMissingTrophyIcon = Config.Bind(
-            "7 - Enemies",
+            "8 - Enemies",
             "Show Missing Trophy Icon",
             true,
             "Show trophy cup icon next to the health bar of enemies whose trophy has not been collected.");
 
-        // [8 - Saved State] (hidden in ConfigurationManager)
+        // [9 - Saved State] (hidden in ConfigurationManager)
         ConfigurationManagerAttributes hiddenInConfigManager = new() { Browsable = false };
         MasterRevealAll = Config.Bind(
-            "8 - Saved State",
+            "9 - Saved State",
             "Reveal All Active",
             false,
             new ConfigDescription(
@@ -224,7 +243,7 @@ public class Plugin : BaseUnityPlugin
                 null,
                 hiddenInConfigManager));
         RevealedAchievementIds = Config.Bind(
-            "8 - Saved State",
+            "9 - Saved State",
             "Revealed Achievement IDs",
             "",
             new ConfigDescription(
@@ -267,5 +286,6 @@ public class Plugin : BaseUnityPlugin
     private sealed class ConfigurationManagerAttributes
     {
         public bool? Browsable;
+        public int? Order;
     }
 }
