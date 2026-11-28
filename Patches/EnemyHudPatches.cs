@@ -15,7 +15,7 @@ internal static class EnemyHudPatches
     private const string TrophySlotName = "Trophy";
     private const float RefreshIntervalSeconds = 0.25f;
 
-    private static readonly Color BackdropColor = new(0.05f, 0.05f, 0.05f, 0.72f);
+    private static readonly Color BackdropColor = new(0.05f, 0.05f, 0.05f, 0.82f);
     private static readonly Color UndefeatedIconColor = new(1f, 0.42f, 0.35f, 1f);
     private static readonly Color TrophyIconColor = new(1f, 0.85f, 0.32f, 1f);
 
@@ -124,7 +124,7 @@ internal static class EnemyHudPatches
         rt.anchorMax = new Vector2(1f, 0.5f);
         rt.pivot = new Vector2(0f, 0.5f);
         rt.anchoredPosition = new Vector2(4f, 0f);
-        rt.sizeDelta = new Vector2(40f, 18f);
+        rt.sizeDelta = new Vector2(48f, 22f);
 
         HorizontalLayoutGroup layout = rootObj.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 3f;
@@ -150,7 +150,7 @@ internal static class EnemyHudPatches
         slotObj.transform.SetParent(parent, false);
 
         RectTransform slotRt = (RectTransform)slotObj.transform;
-        slotRt.sizeDelta = new Vector2(18f, 18f);
+        slotRt.sizeDelta = new Vector2(22f, 22f);
 
         Image backdrop = slotObj.AddComponent<Image>();
         backdrop.color = BackdropColor;
@@ -160,8 +160,8 @@ internal static class EnemyHudPatches
         iconObj.transform.SetParent(slotObj.transform, false);
 
         RectTransform iconRt = (RectTransform)iconObj.transform;
-        iconRt.anchorMin = new Vector2(0.12f, 0.12f);
-        iconRt.anchorMax = new Vector2(0.88f, 0.88f);
+        iconRt.anchorMin = new Vector2(0.08f, 0.08f);
+        iconRt.anchorMax = new Vector2(0.92f, 0.92f);
         iconRt.offsetMin = Vector2.zero;
         iconRt.offsetMax = Vector2.zero;
 

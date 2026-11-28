@@ -68,7 +68,7 @@ internal static class IconLoader
                 offset += read;
             }
 
-            Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, true);
             bool loaded = LoadImageMethod != null &&
                           LoadImageMethod.Invoke(null, new object[] { texture, data }) is true;
             if (!loaded)
@@ -78,8 +78,11 @@ internal static class IconLoader
                 return null;
             }
 
-            texture.filterMode = FilterMode.Bilinear;
+            texture.filterMode = FilterMode.Trilinear;
             texture.wrapMode = TextureWrapMode.Clamp;
+            texture.mipMapBias = -0.35f;
+            texture.anisoLevel = 4;
+            texture.Apply(updateMipmaps: true, makeNoLongerReadable: true);
 
             return Sprite.Create(
                 texture,
