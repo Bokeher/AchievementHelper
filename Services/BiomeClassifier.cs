@@ -27,12 +27,14 @@ public static partial class BiomeClassifier
     private static readonly Dictionary<string, string> PrefabNameBySharedName = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, BiomeTier> ItemBiomeCache = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, BiomeTier> PieceBiomeCache = new(StringComparer.Ordinal);
+    private static readonly Dictionary<PlayerStatType, BiomeTier> TreeBiomeByStat = new();
     private static readonly HashSet<string> LoggedSummaryKeys = new(StringComparer.OrdinalIgnoreCase);
 
     private static bool _enemyIndexBuilt;
     private static bool _itemIndexBuilt;
     private static bool _cookingIndexBuilt;
     private static bool _pieceIndexBuilt;
+    private static bool _treeIndexBuilt;
 
     public static void ResetCache()
     {
@@ -44,11 +46,13 @@ public static partial class BiomeClassifier
         PrefabNameBySharedName.Clear();
         ItemBiomeCache.Clear();
         PieceBiomeCache.Clear();
+        TreeBiomeByStat.Clear();
         LoggedSummaryKeys.Clear();
         _enemyIndexBuilt = false;
         _itemIndexBuilt = false;
         _cookingIndexBuilt = false;
         _pieceIndexBuilt = false;
+        _treeIndexBuilt = false;
     }
 
     public static BiomeTier GetEnemyBiome(string enemySharedName)
@@ -118,6 +122,19 @@ public static partial class BiomeClassifier
         BiomeTier result = ResolvePieceBiome(piece, visiting);
         PieceBiomeCache[pieceName] = result;
         return result;
+    }
+
+    public static BiomeTier GetTreeStatBiome(PlayerStatType stat)
+    {
+        EnsureTreeIndexBuilt();
+        if (TreeBiomeByStat.TryGetValue(stat, out BiomeTier tier))
+        {
+            return tier;
+        }
+
+        return TreeStatBiomes.TryGetValue(stat, out BiomeTier fallback)
+            ? fallback
+            : BiomeTier.Uncategorized;
     }
 
     private static BiomeTier ResolvePieceBiome(Piece piece, HashSet<string> visiting)
@@ -954,5 +971,55 @@ public static partial class BiomeClassifier
         }
 
         Plugin.Log.LogDebug($"[BiomeClassifier] Indexed {PieceByName.Count} build pieces.");
+    }
+
+    private static void EnsureTreeIndexBuilt()
+    {
+        if (_treeIndexBuilt || ZoneSystem.instance == null || ZoneSystem.instance.m_vegetation == null)
+        {
+            return;
+        }
+
+        _treeIndexBuilt = true;
+        TreeBiomeByStat.Clear();
+
+        foreach (ZoneSystem.ZoneVegetation veg in ZoneSystem.instance.m_vegetation)
+        {
+            if (veg == null || !veg.m_enable || veg.m_prefab == null)
+            {
+                continue;
+            }
+
+            TreeBase treeBase = veg.m_prefab.GetComponent<TreeBase>();
+            if (treeBase == null || treeBase.m_logPrefab == null)
+            {
+                continue;
+            }
+
+            ImpactEffect impact = treeBase.m_logPrefab.GetComponent<ImpactEffect>();
+            if (impact == null)
+            {
+                continue;
+            }
+
+            PlayerStatType stat = (PlayerStatType)impact.m_hitVariant;
+            if (stat < PlayerStatType.TreeFir || stat > PlayerStatType.TreeSnowPine)
+            {
+                continue;
+            }
+
+            BiomeTier tier = MapLowestBiome(veg.m_biome);
+            if (tier == BiomeTier.Uncategorized)
+            {
+                continue;
+            }
+
+            if (!TreeBiomeByStat.TryGetValue(stat, out BiomeTier existing) || tier < existing)
+            {
+                TreeBiomeByStat[stat] = tier;
+            }
+        }
+
+        Plugin.Log.LogDebug($"[BiomeClassifier] Indexed {TreeBiomeByStat.Count} tree stat biomes from ZoneSystem.");
     }
 }

@@ -90,6 +90,22 @@ public static partial class BiomeClassifier
             ["$spiritcaller_moose"] = BiomeTier.DeepNorth,
         };
 
+    // Fallback biomes for DeathByTreeAll PlayerStatType triggers when not resolved from ZoneSystem vegetation
+    private static readonly Dictionary<PlayerStatType, BiomeTier> TreeStatBiomes =
+        new()
+        {
+            [PlayerStatType.TreeBeech] = BiomeTier.Meadows,
+            [PlayerStatType.TreeBirch] = BiomeTier.Meadows,
+            [PlayerStatType.TreeOak] = BiomeTier.Meadows,
+            [PlayerStatType.TreeFir] = BiomeTier.BlackForest,
+            [PlayerStatType.TreePine] = BiomeTier.BlackForest,
+            [PlayerStatType.TreeSwamp] = BiomeTier.Swamp,
+            [PlayerStatType.TreeYggdrasilShoot] = BiomeTier.Mistlands,
+            [PlayerStatType.TreeAshlands] = BiomeTier.Ashlands,
+            [PlayerStatType.TreeSnowFir] = BiomeTier.DeepNorth,
+            [PlayerStatType.TreeSnowPine] = BiomeTier.DeepNorth,
+        };
+
     // Base materials mapped by prefab name (case-insensitive; take precedence over mob-derived drops and cooking conversions)
     private static readonly Dictionary<string, BiomeTier> BaseMaterialBiomes =
         new(StringComparer.OrdinalIgnoreCase)

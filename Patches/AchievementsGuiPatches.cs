@@ -111,14 +111,30 @@ internal static class AchievementsGuiPatches
             return false;
         }
 
-        foreach (Achievement.PlayerStatRequirement req in achievement.m_statTrigger)
+        bool groupTreeStatsByBiome = Plugin.GroupDetailsByBiome.Value &&
+                                     achievement.m_id == "DeathByTreeAll";
+        if (groupTreeStatsByBiome)
         {
-            float currentAmount = AchievementService.GetEffectivePlayerStat(diffIndex, req.m_stat);
-            if (hideCompleted && currentAmount >= req.m_amountAboveEquals)
+            IEnumerable<GroupedStatEntry> treeEntries = achievement.m_statTrigger.Select(req =>
+                new GroupedStatEntry(
+                    req.m_stat.ToString(),
+                    AchievementService.GetEffectivePlayerStat(diffIndex, req.m_stat),
+                    req.m_amountAboveEquals,
+                    AchievementService.FormatStatName(req.m_stat.ToString()),
+                    BiomeClassifier.GetTreeStatBiome(req.m_stat)));
+            __instance.StartCoroutine(PopulateGroupedEntriesEffective(__instance, achievement, treeEntries, hideCompleted));
+        }
+        else
+        {
+            foreach (Achievement.PlayerStatRequirement req in achievement.m_statTrigger)
             {
-                continue;
+                float currentAmount = AchievementService.GetEffectivePlayerStat(diffIndex, req.m_stat);
+                if (hideCompleted && currentAmount >= req.m_amountAboveEquals)
+                {
+                    continue;
+                }
+                __instance.CreateStatRow(req.m_stat.ToString(), currentAmount, req.m_amountAboveEquals);
             }
-            __instance.CreateStatRow(req.m_stat.ToString(), currentAmount, req.m_amountAboveEquals);
         }
 
         foreach (Achievement other in achievement.m_otherAchievementTriggers)
