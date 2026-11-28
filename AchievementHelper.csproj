@@ -11,7 +11,6 @@
 
     <!-- Override ValheimDir in Directory.Build.props or via -p:ValheimDir="..." -->
     <ValheimDir Condition="'$(ValheimDir)' == '' and '$(VALHEIM_DIR)' != ''">$(VALHEIM_DIR)</ValheimDir>
-    <ValheimDir Condition="'$(ValheimDir)' == '' and Exists('E:\SteamLibrary\steamapps\common\Valheim')">E:\SteamLibrary\steamapps\common\Valheim</ValheimDir>
     <ValheimDir Condition="'$(ValheimDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Valheim</ValheimDir>
 
     <BepInExCoreDir>$(ValheimDir)\BepInEx\core</BepInExCoreDir>
