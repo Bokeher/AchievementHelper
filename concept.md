@@ -29,11 +29,11 @@
   - `hidden`: Remains completely concealed (`Concealed` on the main list and `???` in details) until unlocked or revealed via the Master Reveal All button.
 
 ## 3. Crafting
-- **Not-Crafted Filter:** Add a toggle button (`Not Crafted (N)`) in the crafting menu showing the count of missing achievement recipes for the current station. When enabled, it filters the list to only items not yet crafted for the achievement; it automatically resets to off when closing the inventory or switching to the Upgrade tab.
+- **Not-Crafted Filter & Badge:** Add a toggle button (`Not Crafted (N)`) in the crafting menu showing the count of missing achievement recipes for the current station, and a corner `!` badge on uncrafted achievement recipe icons (consistent with building). When enabled, the filter shows only items not yet crafted for the achievement and automatically resets when closing the inventory or switching to the Upgrade tab.
 - **Tooltip Indicator:** On every item tooltip (in the corner or another suitable spot), show whether the item has not been crafted for the achievement yet.
 
 ## 4. Cooking & Eating
-- **Not-Cooked Filter & Tooltip:** Cooking works similarly to crafting in Valheim, so it follows the same behavior as Crafting, using `Not Cooked (N)` instead of `Not Crafted (N)` (including unbaked recipes whose roasted/baked variant is not yet cooked).
+- **Not-Cooked Filter, Badge & Tooltip:** Cooking works similarly to crafting in Valheim, so it follows the same behavior as Crafting, using `Not Cooked (N)` and the corner `!` badge on uncooked recipe icons (including unbaked recipes whose roasted/baked variant is not yet cooked).
 - **Raw Cookable Items:** On raw cookable item tooltips, show if the cooked variant has not been cooked or eaten for the achievement yet.
 - **Not-Eaten Indicator:** On every consumable item tooltip, show whether the item has not been eaten for the achievement (`AllFoodEaten`) yet.
 

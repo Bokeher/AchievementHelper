@@ -30,6 +30,7 @@ public class Plugin : BaseUnityPlugin
     internal static ConfigEntry<bool> OnlyHideSpoilerAchievements = null!;
     internal static ConfigEntry<bool> ShowCompletionPercentages = null!;
     internal static ConfigEntry<bool> GroupDetailsByBiome = null!;
+    internal static ConfigEntry<bool> ShowHideCompletedFilter = null!;
 
     // 4 - Item Tooltips
     internal static ConfigEntry<bool> ShowNotCraftedTooltip = null!;
@@ -39,6 +40,8 @@ public class Plugin : BaseUnityPlugin
     internal static ConfigEntry<bool> ShowRawRoastedEatenTooltip = null!;
 
     // 5 - Crafting & Cooking
+    internal static ConfigEntry<bool> ShowNotCraftedBadges = null!;
+    internal static ConfigEntry<bool> ShowNotCookedBadges = null!;
     internal static ConfigEntry<bool> EnableNotCraftedFilter = null!;
     internal static ConfigEntry<bool> EnableNotCookedFilter = null!;
     internal static ConfigEntry<bool> ResetCraftingFilterOnClose = null!;
@@ -104,6 +107,11 @@ public class Plugin : BaseUnityPlugin
             "Group Details By Biome",
             true,
             "Group supported achievement detail lists (such as enemies and craftable items) by biome progression.");
+        ShowHideCompletedFilter = Config.Bind(
+            "3 - Achievements Tab",
+            "Show Hide Completed Button",
+            true,
+            "Show the 'Hide Completed' toggle button in multi-entry achievement detail windows.");
 
         // [4 - Item Tooltips]
         ShowNotCraftedTooltip = Config.Bind(
@@ -133,6 +141,16 @@ public class Plugin : BaseUnityPlugin
             "Show 'Cooked variant not eaten for achievement' on raw cookable items.");
 
         // [5 - Crafting & Cooking]
+        ShowNotCraftedBadges = Config.Bind(
+            "5 - Crafting & Cooking",
+            "Show Not Crafted Badge",
+            true,
+            "Show the corner '!' badge on uncrafted achievement recipes at crafting stations.");
+        ShowNotCookedBadges = Config.Bind(
+            "5 - Crafting & Cooking",
+            "Show Not Cooked Badge",
+            true,
+            "Show the corner '!' badge on uncooked achievement recipes at cooking stations.");
         EnableNotCraftedFilter = Config.Bind(
             "5 - Crafting & Cooking",
             "Show Not Crafted Filter",

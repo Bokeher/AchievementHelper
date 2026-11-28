@@ -56,7 +56,8 @@ internal static class AchievementsGuiPatches
 
         bool concealed = AchievementService.IsConcealed(achievement);
         bool multiCondition = GetTotalConditionCount(achievement) > 1;
-        UpdateHideCompletedButton(__instance, achievement, !concealed && multiCondition);
+        bool allowHideCompleted = Plugin.ShowHideCompletedFilter.Value && !concealed && multiCondition;
+        UpdateHideCompletedButton(__instance, achievement, allowHideCompleted);
 
         if (concealed)
         {
@@ -72,7 +73,7 @@ internal static class AchievementsGuiPatches
         }
 
         int diffIndex = (int)achievement.m_difficultyRequirement;
-        bool hideCompleted = _hideCompletedActive && multiCondition;
+        bool hideCompleted = _hideCompletedActive && allowHideCompleted;
 
         if (hideCompleted && !HasAnyIncompleteCondition(achievement, diffIndex))
         {
