@@ -59,18 +59,47 @@ internal static class InventoryGridBadgePatches
                 TMP_Text? refText = element.m_amount != null ? element.m_amount : element.m_quality;
                 badge = BuildUiPieceButtonPatches.CreateUnbuiltBadge(element.transform, refText);
                 badge.name = InventoryBadgeName;
-                if (badge is RectTransform rt)
-                {
-                    rt.anchorMin = new Vector2(1f, 1f);
-                    rt.anchorMax = new Vector2(1f, 1f);
-                    rt.pivot = new Vector2(1f, 1f);
-                    rt.sizeDelta = new Vector2(15f, 15f);
-                    rt.anchoredPosition = new Vector2(-2f, -2f);
-                }
+            }
+
+            if (badge is RectTransform rt)
+            {
+                ApplyCorner(rt, Plugin.InventoryBadgeCorner.Value);
             }
 
             badge.gameObject.SetActive(true);
             badge.SetAsLastSibling();
+        }
+    }
+
+    private static void ApplyCorner(RectTransform rt, BadgeCorner corner)
+    {
+        rt.sizeDelta = new Vector2(15f, 15f);
+        switch (corner)
+        {
+            case BadgeCorner.TopRight:
+                rt.anchorMin = new Vector2(1f, 1f);
+                rt.anchorMax = new Vector2(1f, 1f);
+                rt.pivot = new Vector2(1f, 1f);
+                rt.anchoredPosition = new Vector2(-2f, -2f);
+                break;
+            case BadgeCorner.BottomLeft:
+                rt.anchorMin = new Vector2(0f, 0f);
+                rt.anchorMax = new Vector2(0f, 0f);
+                rt.pivot = new Vector2(0f, 0f);
+                rt.anchoredPosition = new Vector2(2f, 5f);
+                break;
+            case BadgeCorner.BottomRight:
+                rt.anchorMin = new Vector2(1f, 0f);
+                rt.anchorMax = new Vector2(1f, 0f);
+                rt.pivot = new Vector2(1f, 0f);
+                rt.anchoredPosition = new Vector2(-2f, 5f);
+                break;
+            default:
+                rt.anchorMin = new Vector2(0f, 1f);
+                rt.anchorMax = new Vector2(0f, 1f);
+                rt.pivot = new Vector2(0f, 1f);
+                rt.anchoredPosition = new Vector2(2f, -2f);
+                break;
         }
     }
 
