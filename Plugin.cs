@@ -251,17 +251,59 @@ public class Plugin : BaseUnityPlugin
                 null,
                 hiddenInConfigManager));
 
+        ModEnabled.SettingChanged += (_, _) =>
+        {
+            if (!ModEnabled.Value)
+            {
+                InventoryGuiCraftingFilterPatches.ResetFilter();
+                BuildingFilterState.ResetFilterPreservingSelection();
+            }
+
+            RefreshOpenAchievementsPanel();
+            AchievementsGuiPatches.RefreshOpenDetailsIfVisible();
+            InventoryGuiCraftingFilterPatches.RefreshCraftingPanelIfOpen();
+            InventoryGridBadgePatches.RefreshOpenInventoryGrids();
+            BuildUiFilterPatches.RefreshOpenBuildUi();
+        };
+
         ProgressScopeConfig.SettingChanged += (_, _) => AchievementService.RefreshProgressScope(recheckUnlocks: true);
         CountCheatedCharacters.SettingChanged += (_, _) => AchievementService.RefreshProgressScope(recheckUnlocks: true);
         SyncSteamUnlocks.SettingChanged += (_, _) => AchievementService.RefreshProgressScope(recheckUnlocks: true);
         OnlyHideSpoilerAchievements.SettingChanged += (_, _) => RefreshOpenAchievementsPanel();
         ShowCompletionPercentages.SettingChanged += (_, _) => RefreshOpenAchievementsPanel();
+        GroupDetailsByBiome.SettingChanged += (_, _) => AchievementsGuiPatches.RefreshOpenDetailsIfVisible();
+        ShowHideCompletedFilter.SettingChanged += (_, _) => AchievementsGuiPatches.RefreshOpenDetailsIfVisible();
+
+        ShowInventoryItemBadges.SettingChanged += (_, _) => InventoryGridBadgePatches.RefreshOpenInventoryGrids();
+        InventoryBadgeCorner.SettingChanged += (_, _) => InventoryGridBadgePatches.RefreshOpenInventoryGrids();
+        ShowNotCraftedBadges.SettingChanged += (_, _) => InventoryGuiCraftingFilterPatches.RefreshCraftingPanelIfOpen();
+        ShowNotCookedBadges.SettingChanged += (_, _) => InventoryGuiCraftingFilterPatches.RefreshCraftingPanelIfOpen();
+        ShowUnbuiltPieceBadges.SettingChanged += (_, _) => BuildUiFilterPatches.RefreshOpenBuildUi();
+
+        EnableNotCraftedFilter.SettingChanged += (_, _) =>
+        {
+            if (!EnableNotCraftedFilter.Value)
+            {
+                InventoryGuiCraftingFilterPatches.ResetFilter();
+            }
+            InventoryGuiCraftingFilterPatches.RefreshCraftingPanelIfOpen();
+        };
+        EnableNotCookedFilter.SettingChanged += (_, _) =>
+        {
+            if (!EnableNotCookedFilter.Value)
+            {
+                InventoryGuiCraftingFilterPatches.ResetFilter();
+            }
+            InventoryGuiCraftingFilterPatches.RefreshCraftingPanelIfOpen();
+        };
+        ShowUnbuiltPieceDescription.SettingChanged += (_, _) => BuildUiFilterPatches.RefreshOpenBuildUi();
         EnableNotBuiltFilter.SettingChanged += (_, _) =>
         {
             if (!EnableNotBuiltFilter.Value)
             {
                 BuildingFilterState.ResetFilterPreservingSelection();
             }
+            BuildUiFilterPatches.RefreshOpenBuildUi();
         };
 
         _harmony = Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), ModGuid);

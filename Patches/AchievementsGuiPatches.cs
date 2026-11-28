@@ -24,6 +24,29 @@ internal static class AchievementsGuiPatches
     private static Button? _hideCompletedButton;
     private static bool _hideCompletedActive;
 
+    internal static void RefreshOpenDetailsIfVisible()
+    {
+        if (!Plugin.ShowHideCompletedFilter.Value)
+        {
+            _hideCompletedActive = false;
+        }
+
+        if (_currentAchievement == null || InventoryGui.instance == null || InventoryGui.instance.m_achievementsPanel == null)
+        {
+            return;
+        }
+
+        AchievementsGui gui = InventoryGui.instance.m_achievementsPanel.GetComponent<AchievementsGui>();
+        if (gui == null || gui.m_achievementDetails == null || !gui.m_achievementDetails.activeInHierarchy)
+        {
+            return;
+        }
+
+        Achievement current = _currentAchievement;
+        gui.CloseDetails();
+        gui.OnOpenAchievementDetails(current, true);
+    }
+
     private static readonly Color CompletedColor = Color.green;
     private static readonly Color RevealedNameColor = new(0.88f, 0.88f, 0.88f, 1f);
     private static readonly Color RevealedProgressColor = new(1f, 0.85f, 0.4f, 1f);

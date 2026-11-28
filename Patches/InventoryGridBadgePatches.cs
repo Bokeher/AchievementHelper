@@ -10,6 +10,27 @@ internal static class InventoryGridBadgePatches
 {
     private const string InventoryBadgeName = "AchievementHelper_InventoryBadge";
 
+    internal static void RefreshOpenInventoryGrids()
+    {
+        if (InventoryGui.instance == null || !InventoryGui.IsVisible() || Player.m_localPlayer == null)
+        {
+            return;
+        }
+
+        InventoryGui.instance.m_playerGrid?.UpdateInventory(
+            Player.m_localPlayer.GetInventory(),
+            Player.m_localPlayer,
+            null);
+
+        if (InventoryGui.instance.m_currentContainer != null)
+        {
+            InventoryGui.instance.m_containerGrid?.UpdateInventory(
+                InventoryGui.instance.m_currentContainer.GetInventory(),
+                null,
+                null);
+        }
+    }
+
     [HarmonyPostfix]
     [HarmonyPatch(nameof(InventoryGrid.UpdateGui))]
     private static void UpdateGui_Postfix(InventoryGrid __instance)

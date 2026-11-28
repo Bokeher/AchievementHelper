@@ -16,6 +16,21 @@ internal static class InventoryGuiCraftingFilterPatches
     private static FilterToggleButton? _filterButton;
     private static bool _filterActive;
 
+    internal static void ResetFilter()
+    {
+        _filterActive = false;
+    }
+
+    internal static void RefreshCraftingPanelIfOpen()
+    {
+        if (InventoryGui.instance != null &&
+            InventoryGui.IsVisible() &&
+            InventoryGui.instance.InCraftTab())
+        {
+            InventoryGui.instance.UpdateCraftingPanel(false);
+        }
+    }
+
     [HarmonyPostfix]
     [HarmonyPatch(nameof(InventoryGui.Hide))]
     private static void Hide_Postfix()
@@ -152,6 +167,7 @@ internal static class InventoryGuiCraftingFilterPatches
 
         if (!filterEnabled)
         {
+            _filterActive = false;
             _filterButton?.SetVisible(false);
             return;
         }

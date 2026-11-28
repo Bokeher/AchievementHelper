@@ -236,11 +236,32 @@ internal static class BuildUiFilterPatches
     private const string BuildFilterButtonName = "AchievementHelper_BuildUiFilterButton";
 
     private static FilterToggleButton? _filterButton;
+    private static BuildUi? _lastBuildUi;
+
+    internal static void RefreshOpenBuildUi()
+    {
+        if (_lastBuildUi != null && _lastBuildUi.gameObject.activeInHierarchy)
+        {
+            _lastBuildUi.UpdateTagButtons(true);
+            _lastBuildUi.UpdatePieceButtons();
+            RefreshFilterButton(_lastBuildUi);
+        }
+
+        if (Hud.instance != null && Player.m_localPlayer != null)
+        {
+            Piece? selected = Player.m_localPlayer.GetSelectedPiece();
+            if (selected != null)
+            {
+                Hud.instance.SetupPieceInfo(selected);
+            }
+        }
+    }
 
     [HarmonyPostfix]
     [HarmonyPatch(nameof(BuildUi.OpenBuildMenu))]
     private static void OpenBuildMenu_Postfix(BuildUi __instance)
     {
+        _lastBuildUi = __instance;
         RefreshFilterButton(__instance);
     }
 
@@ -248,6 +269,7 @@ internal static class BuildUiFilterPatches
     [HarmonyPatch(nameof(BuildUi.UpdatePieceButtons))]
     private static void UpdatePieceButtons_Postfix(BuildUi __instance)
     {
+        _lastBuildUi = __instance;
         RefreshFilterButton(__instance);
     }
 
