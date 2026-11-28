@@ -59,7 +59,16 @@ internal static class ItemTooltipPatches
                                 !AchievementService.HasEatenFood(cookedName);
         }
 
-        if (!missingCook && !missingCraft && !missingEat && !missingRoastedCook && !missingRoastedEat)
+        bool missingTrophy = Plugin.ShowMissingTrophyTooltip.Value &&
+                             AchievementService.IsTrophyTarget(sharedName) &&
+                             !AchievementService.HasPickedUpTrophy(sharedName);
+
+        bool missingFish = Plugin.ShowUncaughtFishTooltip.Value &&
+                           AchievementService.IsFishTarget(sharedName) &&
+                           !AchievementService.HasCaughtFish(sharedName);
+
+        if (!missingCook && !missingCraft && !missingEat && !missingRoastedCook && !missingRoastedEat &&
+            !missingTrophy && !missingFish)
         {
             return;
         }
@@ -89,6 +98,16 @@ internal static class ItemTooltipPatches
         if (missingRoastedEat)
         {
             sb.Append("\n<color=#FF9F43>Cooked variant not eaten for achievement</color>");
+        }
+
+        if (missingTrophy)
+        {
+            sb.Append("\n<color=#FFD166>Not collected for achievement</color>");
+        }
+
+        if (missingFish)
+        {
+            sb.Append("\n<color=#FFD166>Not caught for achievement</color>");
         }
 
         __result = sb.ToString();

@@ -38,6 +38,8 @@ public class Plugin : BaseUnityPlugin
     internal static ConfigEntry<bool> ShowNotEatenTooltip = null!;
     internal static ConfigEntry<bool> ShowRawRoastedCookedTooltip = null!;
     internal static ConfigEntry<bool> ShowRawRoastedEatenTooltip = null!;
+    internal static ConfigEntry<bool> ShowMissingTrophyTooltip = null!;
+    internal static ConfigEntry<bool> ShowUncaughtFishTooltip = null!;
 
     // 5 - Badges
     internal static ConfigEntry<bool> ShowInventoryItemBadges = null!;
@@ -143,6 +145,16 @@ public class Plugin : BaseUnityPlugin
             "Show Raw Item Not Eaten",
             true,
             "Show 'Cooked variant not eaten for achievement' on raw cookable items.");
+        ShowMissingTrophyTooltip = Config.Bind(
+            "4 - Item Tooltips",
+            "Show Missing Trophy",
+            true,
+            "Show 'Not collected for achievement' on uncollected trophies. Achievement is counted when a trophy is added to your inventory.");
+        ShowUncaughtFishTooltip = Config.Bind(
+            "4 - Item Tooltips",
+            "Show Uncaught Fish",
+            true,
+            "Show 'Not caught for achievement' on uncaught fish. Achievement is counted only when caught with a fishing rod (not from chests or ground pickups).");
 
         // [5 - Badges]
         ShowInventoryItemBadges = Config.Bind(
@@ -150,7 +162,7 @@ public class Plugin : BaseUnityPlugin
             "Show Inventory Badge",
             true,
             new ConfigDescription(
-                "Show the corner '!' badge on items in your inventory and chests that are not yet crafted, cooked, or eaten for achievements.",
+                "Show the corner '!' badge on items in your inventory and chests that are missing for achievements (crafting, cooking, eating, trophies, or fish).",
                 null,
                 new ConfigurationManagerAttributes { Order = 50 }));
         InventoryBadgeCorner = Config.Bind(

@@ -147,6 +147,16 @@ internal static class InventoryGridBadgePatches
             return true;
         }
 
+        if (AchievementService.IsTrophyTarget(sharedName!) && !AchievementService.HasPickedUpTrophy(sharedName!))
+        {
+            return true;
+        }
+
+        if (AchievementService.IsFishTarget(sharedName!) && !AchievementService.HasCaughtFish(sharedName!))
+        {
+            return true;
+        }
+
         if (AchievementService.TryGetCookedVariant(sharedName!, out string cookedName))
         {
             if ((AchievementService.IsFoodCookTarget(cookedName) && !AchievementService.HasCraftedItem(cookedName)) ||

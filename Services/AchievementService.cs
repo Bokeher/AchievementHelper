@@ -166,6 +166,7 @@ public static class AchievementService
     private static readonly HashSet<string> BuildPieceTargets = new();
     private static readonly HashSet<string> EnemyTargets = new();
     private static readonly HashSet<string> TrophyTargets = new();
+    private static readonly HashSet<string> FishTargets = new();
     private static readonly Dictionary<string, string> RawToCookedMap = new();
     private static readonly Dictionary<string, string> CharacterTrophyMap = new();
 
@@ -704,6 +705,7 @@ public static class AchievementService
     public static bool IsBuildPieceTarget(string pieceName) => BuildPieceTargets.Contains(pieceName);
     public static bool IsEnemyTarget(string enemyName) => EnemyTargets.Contains(enemyName);
     public static bool IsTrophyTarget(string trophySharedName) => TrophyTargets.Contains(trophySharedName);
+    public static bool IsFishTarget(string fishSharedName) => FishTargets.Contains(fishSharedName);
     public static bool TryGetCookedVariant(string rawSharedName, out string cookedSharedName) =>
         RawToCookedMap.TryGetValue(rawSharedName, out cookedSharedName);
 
@@ -774,6 +776,11 @@ public static class AchievementService
     public static bool HasPickedUpTrophy(string trophySharedName)
     {
         return GetEffectiveDictStat((int)DifficultyRequirement.Any, s => s.m_itemPickupStats, trophySharedName) >= 1f;
+    }
+
+    public static bool HasCaughtFish(string fishSharedName)
+    {
+        return GetEffectiveDictStat((int)DifficultyRequirement.Any, s => s.m_pickableStats, fishSharedName) >= 1f;
     }
 
     public static bool IsEnemyMissingForAchievement(Character? character)
@@ -1130,6 +1137,7 @@ public static class AchievementService
         BuildPieceTargets.Clear();
         EnemyTargets.Clear();
         TrophyTargets.Clear();
+        FishTargets.Clear();
         RawToCookedMap.Clear();
         CharacterTrophyMap.Clear();
 
@@ -1207,6 +1215,10 @@ public static class AchievementService
                     case "FindAllTrophies":
                         foreach (var req in ach.m_itemPickupTriggers)
                             if (!string.IsNullOrEmpty(req.m_stat)) TrophyTargets.Add(req.m_stat);
+                        break;
+                    case "GrindFish":
+                        foreach (var req in ach.m_pickableTriggers)
+                            if (!string.IsNullOrEmpty(req.m_stat)) FishTargets.Add(req.m_stat);
                         break;
                 }
             }
